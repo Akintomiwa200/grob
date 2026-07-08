@@ -1,8 +1,62 @@
+/**
+ * Deployment detail page — Overview tab.
+ *
+ * Schema note: this UI needs a bit more than the original Deployment model
+ * exposed. Add these fields/relations if they don't exist yet:
+ *
+ *   model Deployment {
+ *     ...
+ *     buildDurationMs Int?
+ *     readyAt         DateTime?
+ *     aliases         String[]                 // extra domains besides `url`
+ *     repository      String?                  // "acme-io/new-homepage"
+ *     creatorName     String?
+ *     creatorImage    String?
+ *     invocations     DeploymentInvocation[]
+ *   }
+ *
+ *   model DeploymentInvocation {
+ *     id               String   @id @default(cuid())
+ *     deploymentId     String
+ *     deployment       Deployment @relation(fields: [deploymentId], references: [id])
+ *     path             String
+ *     timestamp        DateTime
+ *     durationMs       Float
+ *     billedDurationMs Int
+ *     memorySizeMb     Int
+ *     maxMemoryUsedMb  Int
+ *   }
+ *
+ * Everything below degrades gracefully (empty arrays / "—") if those fields
+ * are absent, so this still compiles and renders against the old schema —
+ * you just won't see runtime logs or extra domains until the migration lands.
+ */
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { DeploymentTabs } from "./deployment-tabs";
+import { VisitButton } from "./visit-button";
 import { DeploymentLogs } from "./logs";
+import { rollbackToDeployment } from "./actions";
+
+const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
+  pending: { dot: "bg-[#F5A623]", text: "text-[#F5A623]" },
+  building: { dot: "bg-[#0070F3]", text: "text-[#0070F3]" },
+  deploying: { dot: "bg-[#0070F3]", text: "text-[#0070F3]" },
+  success: { dot: "bg-[#3DDC97]", text: "text-[#3DDC97]" },
+  failed: { dot: "bg-[#E5484D]", text: "text-[#E5484D]" },
+};
+
+function formatDuration(ms: number | null | undefined) {
+  if (!ms || ms < 0) return "—";
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
 
 export default async function DeploymentDetailPage(props: {
   params: Promise<{ id: string; deploymentId: string }>;
@@ -22,62 +76,167 @@ export default async function DeploymentDetailPage(props: {
   });
   if (!deployment) notFound();
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-400",
-    building: "bg-blue-400",
-    success: "bg-green-400",
-    failed: "bg-red-400",
+  const status = STATUS_STYLES[deployment.status] ?? {
+    dot: "bg-gray-400",
+    text: "text-gray-400",
   };
+
+  const durationMs =
+    new Date(deployment.updatedAt).getTime() -
+    new Date(deployment.createdAt).getTime();
+
+  const domains = [deployment.url, deployment.alias].filter(
+    (d): d is string => Boolean(d),
+  );
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <Link
           href={`/dashboard/projects/${id}`}
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1 block"
+          className="mb-1 block text-sm text-[#8B92A4] hover:text-[#E7E9EE]"
         >
           &larr; {project.name}
         </Link>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Deployment</h1>
-          <span className={`flex items-center gap-1.5 text-sm`}>
-            <span className={`w-2 h-2 rounded-full ${statusColors[deployment.status] || "bg-gray-400"}`} />
-            <span className="capitalize">{deployment.status}</span>
+      </div>
+
+      <DeploymentTabs projectId={id} deploymentId={deploymentId} />
+
+      <div className="mt-6 flex flex-col gap-8 border-b border-[#212633] pb-8 md:flex-row md:items-start">
+        {/* Preview thumbnail */}
+        <div className="flex h-32 w-full shrink-0 flex-col items-center justify-center gap-2 rounded-xl bg-[#0B0E14] md:w-48">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6E5BFF] text-sm font-bold text-white">
+            {project.name.charAt(0).toUpperCase()}
+          </div>
+          <span className="text-xs font-medium uppercase tracking-widest text-[#8B92A4]">
+            {project.name}
           </span>
+        </div>
+
+        {/* Meta grid */}
+        <div className="flex-1">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+                Status
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm">
+                <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+                <span className={`capitalize ${status.text}`}>
+                  {deployment.status}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+                Smart CDN
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#E7E9EE]">
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  className="h-4 w-4 text-[#0070F3]"
+                >
+                  <circle cx="10" cy="10" r="9" fill="currentColor" />
+                  <path
+                    d="M6 10.5l2.5 2.5L14 7.5"
+                    stroke="white"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Enabled
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+                Deployment Duration
+              </p>
+              <p className="mt-1.5 text-sm text-[#E7E9EE]">
+                {formatDuration(durationMs)}
+              </p>
+            </div>
+            <div className="col-span-2 flex items-start sm:col-span-1 sm:justify-end lg:col-span-1">
+              <VisitButton primaryUrl={deployment.url} domains={domains} />
+            </div>
+          </div>
+
+          {domains.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+                Domains
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                  {domains.map((d) => (
+                    <a
+                      key={d}
+                      href={(d.includes("localhost") || d.includes("127.0.0.1")) ? `http://${d}` : `https://${d}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#E7E9EE] hover:text-[#6E5BFF] hover:underline"
+                    >
+                      {d}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="p-3 border rounded-xl">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Branch</p>
-          <p className="font-mono text-sm mt-0.5">{deployment.branch}</p>
+      <div className="grid grid-cols-2 gap-6 border-b border-[#212633] py-6 sm:grid-cols-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+            Commit
+          </p>
+          <p className="mt-1.5 truncate font-mono text-sm text-[#E7E9EE]">
+            {deployment.commitSha.slice(0, 7)}
+            {deployment.commitMsg ? ` — ${deployment.commitMsg}` : ""}
+          </p>
         </div>
-        <div className="p-3 border rounded-xl">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Commit</p>
-          <p className="font-mono text-sm mt-0.5">{deployment.commitSha.slice(0, 7)}</p>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+            Branch
+          </p>
+          <p className="mt-1.5 font-mono text-sm text-[#E7E9EE]">
+            {deployment.branch}
+          </p>
         </div>
-        <div className="p-3 border rounded-xl">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
-          <p className="text-sm mt-0.5">{new Date(deployment.createdAt).toLocaleString()}</p>
-        </div>
-        <div className="p-3 border rounded-xl">
-          <p className="text-xs text-gray-500 dark:text-gray-400">URL</p>
-          <p className="text-sm mt-0.5 font-mono truncate">
-            {deployment.url ? (
-              <a href={`https://${deployment.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                {deployment.url}
-              </a>
-            ) : (
-              "-"
-            )}
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+            Deployed
+          </p>
+          <p className="mt-1.5 text-sm text-[#E7E9EE]">
+            {new Date(deployment.createdAt).toLocaleString()}
           </p>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Build Logs</h2>
-        <DeploymentLogs deploymentId={deployment.id} initialLogs={deployment.logs} status={deployment.status} />
+      <div className="pt-6">
+        <DeploymentLogs
+          deploymentId={deployment.id}
+          initialBuildLogs={deployment.logs}
+          status={deployment.status}
+          invocations={[]}
+        />
       </div>
+
+      {deployment.status === "success" && (
+        <div className="mt-8 border-t border-[#212633] pt-8">
+          <h2 className="mb-3 text-lg font-semibold text-[#E7E9EE]">Actions</h2>
+          <form
+            action={rollbackToDeployment.bind(null, project.id, deployment.id)}
+          >
+            <button
+              type="submit"
+              className="rounded-lg border border-orange-800 px-4 py-2 text-sm font-medium text-orange-400 hover:bg-orange-950"
+            >
+              Rollback to this deployment
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,17 +44,41 @@ export async function createWebhook(projectId: string) {
   if (!project) throw new Error("Project not found");
 
   const secret = crypto.randomUUID().slice(0, 16);
-  const url = `${project.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-webhook`;
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+  const webhookUrl = `${baseUrl}/api/webhooks/${project.id}`;
 
-  await prisma.webhook.create({
+  const wh = await prisma.webhook.create({
     data: {
       projectId,
-      url,
+      url: webhookUrl,
       secret,
       events: JSON.stringify(["push"]),
       active: true,
     },
   });
+
+  const repoFullName = project.gitUrl
+    ?.replace("https://github.com/", "")
+    ?.replace(".git", "");
+  if (repoFullName && repoFullName.includes("/")) {
+    try {
+      const { createGitHubWebhook } = await import("@/lib/github");
+      const hookId = await createGitHubWebhook(
+        session.user.id,
+        repoFullName,
+        webhookUrl,
+        secret
+      );
+      await prisma.webhook.update({
+        where: { id: wh.id },
+        data: { githubRepo: repoFullName, githubHookId: String(hookId) },
+      });
+    } catch {
+      // webhook created locally but failed on GitHub side
+    }
+  }
 
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
 }
@@ -79,6 +103,19 @@ export async function toggleWebhook(projectId: string, webhookId: string) {
 export async function deleteWebhook(projectId: string, webhookId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const wh = await prisma.webhook.findFirst({
+    where: { id: webhookId, project: { userId: session.user.id } },
+  });
+
+  if (wh?.githubRepo && wh?.githubHookId) {
+    try {
+      const { deleteGitHubWebhook } = await import("@/lib/github");
+      await deleteGitHubWebhook(session.user.id, wh.githubRepo, Number(wh.githubHookId));
+    } catch {
+      // local delete proceeds even if GitHub API fails
+    }
+  }
 
   await prisma.webhook.delete({
     where: { id: webhookId, project: { userId: session.user.id } },
@@ -106,6 +143,28 @@ export async function saveProjectConfig(projectId: string, formData: FormData) {
       gitUrl: (formData.get("gitUrl") as string) || "",
     },
   });
+
+  revalidatePath(`/dashboard/projects/${projectId}/settings`);
+}
+
+export async function saveProtection(projectId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const existing = await prisma.deploymentProtection.findFirst({
+    where: { projectId },
+  });
+
+  const pw = formData.get("password") as string | null;
+  const data: Record<string, unknown> = {
+    enabled: formData.has("enabled"),
+  };
+  if (pw) data.password = pw;
+  if (existing) {
+    await prisma.deploymentProtection.update({ where: { id: existing.id }, data: data as any });
+  } else {
+    await prisma.deploymentProtection.create({ data: { projectId, ...data } as any });
+  }
 
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
 }

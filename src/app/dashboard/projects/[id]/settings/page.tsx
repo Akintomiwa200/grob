@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { saveEnvVars, saveProjectConfig, createWebhook, toggleWebhook, deleteWebhook } from "./actions";
+import { saveEnvVars, saveProjectConfig, createWebhook, toggleWebhook, deleteWebhook, saveProtection } from "./actions";
 
 export default async function ProjectSettingsPage(props: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -14,6 +14,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
     include: {
       envVars: { orderBy: { key: "asc" } },
       webhooks: true,
+      protection: true,
     },
   });
   if (!project) notFound();
@@ -22,12 +23,12 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
     <div>
       <Link
         href={`/dashboard/projects/${id}`}
-        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1 block"
+        className="text-sm text-muted hover:text-text mb-1 block"
       >
         &larr; {project.name}
       </Link>
       <h1 className="text-2xl font-bold mb-1">Settings</h1>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">Manage project configuration.</p>
+      <p className="text-muted text-sm mb-8">Manage project configuration.</p>
 
       <div className="max-w-2xl space-y-10">
         <section>
@@ -39,7 +40,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                 name="gitUrl"
                 defaultValue={project.gitUrl}
                 placeholder="https://github.com/username/repo"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -48,7 +49,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                 <input
                   name="buildCommand"
                   defaultValue={project.buildCommand}
-                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
                 />
               </div>
               <div>
@@ -56,7 +57,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                 <input
                   name="outputDir"
                   defaultValue={project.outputDir}
-                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
                 />
               </div>
             </div>
@@ -65,7 +66,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
               <input
                 name="installCommand"
                 defaultValue={project.installCommand}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
               />
             </div>
             <div>
@@ -74,27 +75,27 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                 name="framework"
                 defaultValue={project.framework}
                 placeholder="nextjs, react, vue, etc."
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black rounded-lg hover:bg-gray-700 dark:hover:bg-gray-200"
-            >
-              Save Configuration
+              className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
+              >
+                Save Configuration
             </button>
           </form>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold mb-4">Environment Variables</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-sm text-muted mb-4">
             These are injected at build time.
           </p>
           <form action={saveEnvVars.bind(null, project.id)} className="space-y-3">
             <div id="envVars">
               {project.envVars.length === 0 ? (
-                <div className="p-4 border-2 border-dashed rounded-xl text-center text-sm text-gray-400" id="emptyState">
+                <div className="p-4 border-2 border-dashed rounded-xl text-center text-sm text-muted" id="emptyState">
                   No environment variables yet
                 </div>
               ) : null}
@@ -104,13 +105,13 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                     name="key[]"
                     defaultValue={env.key}
                     placeholder="KEY"
-                    className="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
                   />
                   <input
                     name="value[]"
                     defaultValue={env.value}
                     placeholder="value"
-                    className="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent"
+                    className="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
                   />
                   <button
                     type="button"
@@ -118,7 +119,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                       const row = (e.target as HTMLElement).closest(".env-row");
                       row?.remove();
                     }}
-                    className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]"
                   >
                     &times;
                   </button>
@@ -135,19 +136,19 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                   const row = document.createElement("div");
                   row.className = "flex gap-2 mb-2 env-row";
                   row.innerHTML = `
-                    <input name="key[]" placeholder="KEY" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent" />
-                    <input name="value[]" placeholder="value" class="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 bg-transparent" />
-                    <button type="button" onclick="this.closest('.env-row').remove()" class="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">&times;</button>
+                    <input name="key[]" placeholder="KEY" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent" />
+                    <input name="value[]" placeholder="value" class="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent" />
+                    <button type="button" onclick="this.closest('.env-row').remove()" class="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]">&times;</button>
                   `;
                   container?.appendChild(row);
                 }}
-                className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]"
               >
                 + Add Variable
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black rounded-lg hover:bg-gray-700 dark:hover:bg-gray-200"
+                className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
               >
                 Save Variables
               </button>
@@ -157,13 +158,13 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
 
         <section>
           <h2 className="text-lg font-semibold mb-4">Webhooks</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-sm text-muted mb-4">
             Trigger auto-deploys by sending POST requests to your webhook URL.
             Configure your Git provider to send push events to the URL below.
           </p>
 
-          <div className="p-4 mb-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Webhook URL</p>
+          <div className="p-4 mb-4 bg-surface rounded-xl">
+            <p className="text-xs text-muted mb-1">Webhook URL</p>
             <p className="font-mono text-sm break-all">
               {`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : "http://localhost:3000"}/api/webhooks/${project.id}`}
             </p>
@@ -173,7 +174,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
             <form action={createWebhook.bind(null, project.id)}>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black rounded-lg hover:bg-gray-700 dark:hover:bg-gray-200"
+                className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
               >
                 Generate Webhook
               </button>
@@ -182,7 +183,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
 
           {project.webhooks.length === 0 ? (
             <div className="text-center py-8 border-2 border-dashed rounded-xl">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">No webhooks configured.</p>
+              <p className="text-muted text-sm">No webhooks configured.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -190,9 +191,10 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                 <div key={wh.id} className="p-4 border rounded-xl">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-mono">{wh.url}</p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-sm font-mono break-all">{wh.url}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted">
                         <span>Events: {wh.events}</span>
+                        {wh.githubRepo && <span className="text-blue-500">{wh.githubRepo}</span>}
                         <span>Secret: <code className="font-mono">{wh.secret || "none"}</code></span>
                       </div>
                     </div>
@@ -203,7 +205,7 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
                           className={`text-xs px-3 py-1.5 border rounded-lg ${
                             wh.active
                               ? "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800"
-                              : "text-gray-500"
+                              : "text-muted"
                           }`}
                         >
                           {wh.active ? "Active" : "Inactive"}
@@ -223,6 +225,37 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
               ))}
             </div>
           )}
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Deployment Protection</h2>
+          <p className="text-sm text-muted mb-4">
+            Protect production deployments with password or branch restrictions.
+          </p>
+          <form action={saveProtection.bind(null, project.id)} className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                name="enabled"
+                defaultChecked={project.protection?.enabled}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <span className="text-sm">Enable deployment protection</span>
+            </label>
+            <input
+              name="password"
+              type="text"
+              defaultValue={project.protection?.password || ""}
+              placeholder="Deployment password (optional)"
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
+              >
+                Save Protection
+            </button>
+          </form>
         </section>
       </div>
     </div>

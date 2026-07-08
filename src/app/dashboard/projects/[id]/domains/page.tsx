@@ -19,23 +19,23 @@ export default async function DomainsPage(props: { params: Promise<{ id: string 
     <div>
       <Link
         href={`/dashboard/projects/${id}`}
-        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1 block"
+        className="text-sm text-muted hover:text-text mb-1 block"
       >
         &larr; {project.name}
       </Link>
       <h1 className="text-2xl font-bold mb-1">Domains</h1>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">Manage custom domains for your project.</p>
+      <p className="text-muted text-sm mb-8">Manage custom domains for your project.</p>
 
       <div className="max-w-2xl space-y-6">
         <form action={addDomain.bind(null, project.id)} className="flex gap-3">
           <input
             name="name"
             placeholder="example.com"
-            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
           />
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black rounded-lg hover:bg-gray-700 dark:hover:bg-gray-200"
+            className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
           >
             Add Domain
           </button>
@@ -43,7 +43,7 @@ export default async function DomainsPage(props: { params: Promise<{ id: string 
 
         {project.domains.length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed rounded-xl">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No domains added yet.</p>
+            <p className="text-muted text-sm">No domains added yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -52,7 +52,7 @@ export default async function DomainsPage(props: { params: Promise<{ id: string 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-mono text-sm font-medium">{domain.name}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted">
                       <span className={`flex items-center gap-1 ${domain.verified ? "text-green-600 dark:text-green-400" : ""}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${domain.verified ? "bg-green-500" : "bg-yellow-400"}`} />
                         {domain.verified ? "Verified" : "Pending verification"}
@@ -66,7 +66,7 @@ export default async function DomainsPage(props: { params: Promise<{ id: string 
                   <div className="flex items-center gap-2">
                     {!domain.verified && (
                       <form action={verifyDomain.bind(null, project.id, domain.id)}>
-                        <button type="submit" className="text-xs px-3 py-1.5 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <button type="submit" className="text-xs px-3 py-1.5 border rounded-lg hover:bg-white/[0.05]">
                           Verify
                         </button>
                       </form>
@@ -79,9 +79,9 @@ export default async function DomainsPage(props: { params: Promise<{ id: string 
                   </div>
                 </div>
                 {!domain.verified && (
-                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs">
+                  <div className="mt-3 p-3 bg-surface rounded-lg text-xs">
                     <p className="font-medium mb-1">DNS Configuration:</p>
-                    <p className="font-mono text-gray-500">Add a CNAME record pointing <span className="text-gray-900 dark:text-gray-200">{domain.name}</span> to <span className="text-gray-900 dark:text-gray-200">{project.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}.grob.app</span></p>
+                    <p className="font-mono text-muted">Add a CNAME record pointing <span className="text-text">{domain.name}</span> to <span className="text-text">{project.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}.grob.app</span></p>
                   </div>
                 )}
               </div>

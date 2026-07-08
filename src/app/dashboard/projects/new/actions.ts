@@ -8,6 +8,10 @@ export async function createProject(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
 
+  const repoFullName = (formData.get("repoFullName") as string) || "";
+  const defaultBranch = (formData.get("defaultBranch") as string) || "main";
+  const createWebhook = formData.has("createWebhook");
+
   const project = await prisma.project.create({
     data: {
       name: formData.get("name") as string,
@@ -20,6 +24,41 @@ export async function createProject(formData: FormData) {
       userId: session.user.id,
     },
   });
+
+  if (repoFullName && createWebhook) {
+    const secret = crypto.randomUUID().slice(0, 16);
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
+    const webhookUrl = `${baseUrl}/api/webhooks/${project.id}`;
+
+    const wh = await prisma.webhook.create({
+      data: {
+        projectId: project.id,
+        url: webhookUrl,
+        secret,
+        events: JSON.stringify(["push"]),
+        active: true,
+        githubRepo: repoFullName,
+      },
+    });
+
+    try {
+      const { createGitHubWebhook } = await import("@/lib/github");
+      const hookId = await createGitHubWebhook(
+        session.user.id,
+        repoFullName,
+        webhookUrl,
+        secret
+      );
+      await prisma.webhook.update({
+        where: { id: wh.id },
+        data: { githubHookId: String(hookId) },
+      });
+    } catch (err) {
+      console.error("Failed to create GitHub webhook:", err);
+    }
+  }
 
   redirect(`/dashboard/projects/${project.id}`);
 }

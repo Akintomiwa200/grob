@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { createProject } from "./actions";
+import { GitHubRepos } from "./GitHubRepos";
 
 const frameworks = [
   { value: "nextjs", label: "Next.js", build: "npm run build", out: ".next", install: "npm install" },
@@ -9,14 +13,42 @@ const frameworks = [
 ];
 
 export default function NewProjectPage() {
+  const [selectedRepo, setSelectedRepo] = useState<{
+    fullName: string;
+    name: string;
+    cloneUrl: string;
+    defaultBranch: string;
+  } | null>(null);
+
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-1">New Project</h1>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+      <p className="text-muted text-sm mb-8">
         Import a Git repository and deploy it to production.
       </p>
 
+      <div className="mb-8">
+        <h2 className="text-sm font-medium mb-3">Import from GitHub</h2>
+        <GitHubRepos
+          onSelect={(repo) => {
+            setSelectedRepo({
+              fullName: repo.fullName,
+              name: repo.name,
+              cloneUrl: repo.cloneUrl,
+              defaultBranch: repo.defaultBranch,
+            });
+            const nameInput = document.getElementById("name") as HTMLInputElement;
+            if (nameInput && !nameInput.value) nameInput.value = repo.name;
+            const gitUrlInput = document.getElementById("gitUrl") as HTMLInputElement;
+            if (gitUrlInput) gitUrlInput.value = repo.cloneUrl;
+          }}
+        />
+      </div>
+
       <form action={createProject} className="space-y-6">
+        <input type="hidden" name="repoFullName" value={selectedRepo?.fullName || ""} />
+        <input type="hidden" name="defaultBranch" value={selectedRepo?.defaultBranch || "main"} />
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium mb-1.5">Project Name</label>
           <input
@@ -24,7 +56,7 @@ export default function NewProjectPage() {
             name="name"
             required
             placeholder="my-awesome-app"
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
           />
         </div>
 
@@ -34,7 +66,7 @@ export default function NewProjectPage() {
             id="description"
             name="description"
             placeholder="A short description of your project"
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
           />
         </div>
 
@@ -44,9 +76,8 @@ export default function NewProjectPage() {
             id="gitUrl"
             name="gitUrl"
             placeholder="https://github.com/username/repo"
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
           />
-          <p className="text-xs text-gray-400 mt-1">Optional for demo purposes</p>
         </div>
 
         <div>
@@ -54,7 +85,7 @@ export default function NewProjectPage() {
           <select
             id="framework"
             name="framework"
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
             onChange={(e) => {
               const fw = frameworks.find((f) => f.value === e.target.value);
               if (fw) {
@@ -81,7 +112,7 @@ export default function NewProjectPage() {
               id="buildCommand"
               name="buildCommand"
               defaultValue="npm run build"
-              className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+              className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
             />
           </div>
           <div>
@@ -90,7 +121,7 @@ export default function NewProjectPage() {
               id="outputDir"
               name="outputDir"
               defaultValue=".next"
-              className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+              className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
             />
           </div>
         </div>
@@ -101,20 +132,35 @@ export default function NewProjectPage() {
             id="installCommand"
             name="installCommand"
             defaultValue="npm install"
-            className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 bg-transparent"
+            className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
           />
         </div>
+
+        {selectedRepo && (
+          <label className="flex items-center gap-3 p-3 border rounded-xl bg-surface">
+            <input
+              type="checkbox"
+              name="createWebhook"
+              defaultChecked
+              className="w-4 h-4 rounded border-gray-300"
+            />
+            <div className="text-sm">
+              <span className="font-medium">Auto-create webhook</span>
+              <p className="text-xs text-muted">Automatically deploy on every push to {selectedRepo.fullName}</p>
+            </div>
+          </label>
+        )}
 
         <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black rounded-lg hover:bg-gray-700 dark:hover:bg-gray-200"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
           >
             Create Project
           </button>
           <a
             href="/dashboard"
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            className="text-sm text-muted hover:text-text"
           >
             Cancel
           </a>

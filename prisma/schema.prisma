@@ -15,7 +15,9 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  projects      Project[]
+  ownedProjects Project[]    @relation("ProjectOwner")
+  memberships   ProjectMember[]
+  apiTokens     ApiToken[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -55,23 +57,52 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model ApiToken {
+  id        String   @id @default(cuid())
+  name      String
+  token     String   @unique
+  scopes    String   @default("[\"read\"]")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+}
+
 model Project {
-  id             String       @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
-  description    String       @default("")
-  gitUrl         String       @default("")
-  framework      String       @default("")
-  buildCommand   String       @default("npm run build")
-  outputDir      String       @default("out")
-  installCommand String       @default("npm install")
+  description    String            @default("")
+  gitUrl         String            @default("")
+  framework      String            @default("")
+  buildCommand   String            @default("npm run build")
+  outputDir      String            @default("out")
+  installCommand String            @default("npm install")
   userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User              @relation("ProjectOwner", fields: [userId], references: [id], onDelete: Cascade)
+  members        ProjectMember[]
   domains        Domain[]
   envVars        EnvVar[]
   webhooks       Webhook[]
   deployments    Deployment[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  redirects      ProjectsRedirect[]
+  functions      ProjectFunction[]
+  notifications  NotificationChannel[]
+  protection     DeploymentProtection?
+  alias          String?           @default("")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
 }
 
 model Domain {
@@ -102,27 +133,75 @@ model EnvVar {
 }
 
 model Webhook {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url          String
+  secret       String   @default("")
+  events       String   @default("[\"push\"]")
+  active       Boolean  @default(true)
+  githubRepo   String?  @default("")
+  githubHookId String?  @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model NotificationChannel {
   id        String   @id @default(cuid())
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String   @default("slack")
   url       String
-  secret    String   @default("")
-  events    String   @default("[\"push\"]")
+  events    String   @default("[\"deploy.success\",\"deploy.failed\"]")
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Deployment {
-  id        String    @id @default(cuid())
+model DeploymentProtection {
+  id        String @id @default(cuid())
+  projectId String @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  enabled   Boolean @default(false)
+  password  String  @default("")
+}
+
+model ProjectsRedirect {
+  id        String   @id @default(cuid())
   projectId String
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  status    String    @default("pending")
-  logs      String    @default("")
-  branch    String    @default("main")
-  commitSha String    @default("")
-  commitMsg String    @default("")
-  url       String    @default("")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  source    String
+  destination String
+  type      String   @default("permanent")
+  createdAt DateTime @default(now())
+}
+
+model ProjectFunction {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  method       String   @default("ANY")
+  runtime      String   @default("nodejs")
+  sourcePath   String   @default("")
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([projectId, name])
+}
+
+model Deployment {
+  id         String    @id @default(cuid())
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status     String    @default("pending")
+  logs       String    @default("")
+  branch     String    @default("main")
+  commitSha  String    @default("")
+  commitMsg  String    @default("")
+  url        String    @default("")
+  alias      String    @default("")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }

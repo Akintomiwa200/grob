@@ -27,7 +27,7 @@ export default async function ActivityPage() {
 
       {deployments.length === 0 ? (
         <div className="text-center py-20 border-2 border-dashed rounded-xl">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No activity yet.</p>
+          <p className="text-muted text-sm">No activity yet.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -35,18 +35,18 @@ export default async function ActivityPage() {
             <Link
               key={dep.id}
               href={`/dashboard/projects/${dep.project.id}/deployments/${dep.id}`}
-              className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+              className="flex items-center justify-between p-4 border rounded-xl hover:bg-white/[0.03] transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full ${statusColors[dep.status]?.split(" ")[0] || "bg-gray-400"}`} />
                 <div>
                   <p className="text-sm font-medium">{dep.project.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted">
                     {dep.commitMsg || "Manual deploy"} &middot; {dep.branch}
                   </p>
                 </div>
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-muted">
                 {new Date(dep.createdAt).toLocaleString()}
               </span>
             </Link>

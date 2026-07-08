@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { simulateBuild, logEntriesToString } from "@/lib/build-simulator";
 
 export async function POST(
   req: Request,
@@ -36,66 +37,33 @@ export async function POST(
     },
   });
 
-  simulateDeployInBackground(project, deployment.id);
+  const entries: import("@/lib/build-simulator").LogEntry[] = [];
+
+  const url = await simulateBuild(
+    {
+      name: project.name,
+      gitUrl: project.gitUrl,
+      installCommand: project.installCommand,
+      buildCommand: project.buildCommand,
+      outputDir: project.outputDir,
+      framework: project.framework,
+    },
+    deployment.id,
+    (entry) => entries.push(entry),
+  );
+
+  await prisma.deployment.update({
+    where: { id: deployment.id },
+    data: {
+      status: url ? "success" : "failed",
+      logs: logEntriesToString(entries),
+      url: url || "",
+    },
+  });
 
   return Response.json({
     ok: true,
     deploymentId: deployment.id,
+    status: url ? "success" : "failed",
   });
-}
-
-async function simulateDeployInBackground(
-  project: { id: string; name: string; installCommand: string; buildCommand: string; outputDir: string; framework: string },
-  deploymentId: string
-) {
-  const logs: string[] = [];
-  const log = (line: string) => logs.push(line);
-  const timestamp = () => new Date().toISOString().split("T")[1].split(".")[0];
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-  try {
-    log(`[${timestamp()}] Webhook triggered: cloning repository...`);
-    await sleep(600);
-    log(`[${timestamp()}] Cloned branch successfully`);
-    await sleep(200);
-
-    log(`[${timestamp()}] Installing dependencies...`);
-    log(`[${timestamp()}] $ ${project.installCommand}`);
-    await sleep(1000);
-    log(`[${timestamp()}] ✓ Dependencies installed`);
-    await sleep(200);
-
-    log(`[${timestamp()}] Detected framework: ${project.framework || "Unknown"}`);
-    await sleep(200);
-
-    log(`[${timestamp()}] Running build...`);
-    log(`[${timestamp()}] $ ${project.buildCommand}`);
-    await sleep(1500);
-    log(`[${timestamp()}] ✓ Build completed successfully`);
-    await sleep(200);
-
-    log(`[${timestamp()}] Collecting output from ${project.outputDir}...`);
-    await sleep(400);
-    log(`[${timestamp()}] ✓ Assets collected`);
-    await sleep(200);
-
-    const hash = crypto.randomUUID().slice(0, 12);
-    const url = `${project.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${hash}.grob.app`;
-
-    log(`[${timestamp()}] Deploying to production...`);
-    await sleep(600);
-    log(`[${timestamp()}] ✓ Deployment complete!`);
-    log(`[${timestamp()}] URL: https://${url}`);
-
-    await prisma.deployment.update({
-      where: { id: deploymentId },
-      data: { status: "success", logs: logs.join("\n"), url },
-    });
-  } catch (err) {
-    log(`[${timestamp()}] ✗ Deployment failed: ${err}`);
-    await prisma.deployment.update({
-      where: { id: deploymentId },
-      data: { status: "failed", logs: logs.join("\n") },
-    });
-  }
 }

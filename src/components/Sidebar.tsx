@@ -1,0 +1,224 @@
+"use client";
+
+/**
+ * Sidebar — dashboard navigation
+ *
+ * Matches the reference layout: workspace switcher, search, grouped nav
+ * with icons/badges/disclosure chevrons, and an account row pinned to
+ * the bottom. Active state is derived from the current pathname.
+ *
+ * Dependencies: lucide-react
+ */
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutGrid,
+  Box,
+  ScrollText,
+  LineChart,
+  Gauge,
+  Eye,
+  ShieldHalf,
+  Globe,
+  Variable,
+  Globe2,
+  Cable,
+  Blocks,
+  Database,
+  Flag,
+  Bot,
+  Share2,
+  Boxes,
+  Workflow,
+  Images,
+  PieChart,
+  CircleHelp,
+  ChevronsUpDown,
+  Search,
+  MoreHorizontal,
+  Bell,
+} from "lucide-react";
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  badge?: "Beta";
+  chevron?: boolean;
+};
+
+const NAV_GROUPS: NavItem[][] = [
+  [
+    { label: "Projects", href: "/dashboard", icon: LayoutGrid },
+    { label: "Deployments", href: "/dashboard/deployments", icon: Box },
+    { label: "Logs", href: "/dashboard/logs", icon: ScrollText },
+    { label: "Analytics", href: "/dashboard/analytics", icon: LineChart },
+    { label: "Speed Insights", href: "/dashboard/speed-insights", icon: Gauge },
+    {
+      label: "Observability",
+      href: "/dashboard/observability",
+      icon: Eye,
+      chevron: true,
+    },
+    { label: "Firewall", href: "/dashboard/firewall", icon: ShieldHalf },
+    { label: "CDN", href: "/dashboard/cdn", icon: Globe },
+  ],
+  [
+    { label: "Environment Variables", href: "/dashboard/env", icon: Variable },
+    { label: "Domains", href: "/dashboard/domains", icon: Globe2 },
+    {
+      label: "Connect",
+      href: "/dashboard/connect",
+      icon: Cable,
+      badge: "Beta",
+    },
+    { label: "Integrations", href: "/dashboard/integrations", icon: Blocks },
+    { label: "Storage", href: "/dashboard/storage", icon: Database },
+    { label: "Flags", href: "/dashboard/flags", icon: Flag },
+    { label: "Agent", href: "/dashboard/agent", icon: Bot, chevron: true },
+    {
+      label: "AI Gateway",
+      href: "/dashboard/ai-gateway",
+      icon: Share2,
+      chevron: true,
+    },
+    {
+      label: "Sandboxes",
+      href: "/dashboard/sandboxes",
+      icon: Boxes,
+      chevron: true,
+    },
+    { label: "Workflows", href: "/dashboard/workflows", icon: Workflow },
+    { label: "Images", href: "/dashboard/images", icon: Images, badge: "Beta" },
+  ],
+  [
+    { label: "Usage", href: "/dashboard/usage", icon: PieChart },
+    { label: "Support", href: "/dashboard/support", icon: CircleHelp },
+  ],
+];
+
+type SidebarUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  plan?: string;
+};
+
+export default function Sidebar({ user }: { user: SidebarUser }) {
+  const pathname = usePathname();
+
+  function isActive(href: string) {
+    if (href === "/dashboard") {
+      return (
+        pathname === "/dashboard" || pathname.startsWith("/dashboard/projects")
+      );
+    }
+    return pathname.startsWith(href);
+  }
+
+  const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
+
+  return (
+    <aside className="hidden md:flex w-64 flex-col border-r border-[#212633] bg-[#0B0E14] text-[#E7E9EE]">
+      {/* Workspace switcher */}
+      <button
+        type="button"
+        className="flex h-14 items-center gap-2 border-b border-[#212633] px-4 text-left hover:bg-white/[0.03]"
+      >
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
+          {initial}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          {user.name || "Account"}
+        </span>
+        <span className="rounded-full border border-[#212633] bg-[#12151D] px-2 py-0.5 text-[11px] font-medium text-[#8B92A4]">
+          {user.plan ?? "Hobby"}
+        </span>
+        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
+      </button>
+
+      {/* Search */}
+      <div className="p-3">
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-lg border border-[#212633] bg-[#12151D] px-3 py-2 text-sm text-[#8B92A4] hover:border-[#2C3140]"
+        >
+          <Search className="h-4 w-4" strokeWidth={1.75} />
+          <span className="flex-1 text-left">Find…</span>
+          <kbd className="rounded border border-[#212633] bg-[#0B0E14] px-1.5 py-0.5 font-mono text-[11px] text-[#8B92A4]">
+            F
+          </kbd>
+        </button>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+        {NAV_GROUPS.map((group, i) => (
+          <div key={i} className="mb-3">
+            <div className="space-y-0.5">
+              {group.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-sm transition-colors ${
+                      active
+                        ? "bg-white/[0.08] font-medium text-[#E7E9EE]"
+                        : "text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+                    }`}
+                  >
+                    <item.icon
+                      className="h-4 w-4 shrink-0"
+                      strokeWidth={1.75}
+                    />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="rounded-full bg-[#6E5BFF]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#8F7CFF]">
+                        {item.badge}
+                      </span>
+                    )}
+                    {item.chevron && <span className="text-[#8B92A4]">›</span>}
+                  </Link>
+                );
+              })}
+            </div>
+            {i < NAV_GROUPS.length - 1 && (
+              <div className="my-3 h-px bg-[#212633]" />
+            )}
+          </div>
+        ))}
+      </nav>
+
+      {/* Account row */}
+      <div className="flex items-center gap-3 border-t border-[#212633] px-4 py-3">
+        {user.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={user.image} alt="" className="h-7 w-7 rounded-full" />
+        ) : (
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5FA2] to-[#6E5BFF] text-xs font-semibold text-white">
+            {initial}
+          </span>
+        )}
+        <span className="flex-1 truncate text-sm text-[#E7E9EE]">
+          {user.name || user.email || "Account"}
+        </span>
+        <button
+          type="button"
+          aria-label="More options"
+          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+        >
+          <Bell className="h-4 w-4" />
+        </button>
+      </div>
+    </aside>
+  );
+}
