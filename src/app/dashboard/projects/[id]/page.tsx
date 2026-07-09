@@ -17,104 +17,97 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   if (!project) notFound();
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-400 text-yellow-900",
-    building: "bg-blue-400 text-blue-900",
-    success: "bg-green-400 text-green-900",
-    failed: "bg-red-400 text-red-900",
+    pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    building: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    success: "bg-green-500/10 text-green-500 border-green-500/20",
+    failed: "bg-red-500/10 text-red-500 border-red-500/20",
+  };
+  
+  const statusDots: Record<string, string> = {
+    pending: "bg-yellow-500",
+    building: "bg-blue-500",
+    success: "bg-green-500",
+    failed: "bg-red-500",
   };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          {project.description && (
-            <p className="text-muted text-sm mt-0.5">{project.description}</p>
-          )}
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
+          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Framework</p>
+          <p className="font-medium text-text">{project.framework || "Custom"}</p>
         </div>
-        <form action={deployProject.bind(null, project.id)}>
-          <button
-            type="submit"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
-          >
-            Deploy
-          </button>
-        </form>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="p-4 border rounded-xl">
-          <p className="text-xs text-muted font-medium uppercase tracking-wide">Framework</p>
-          <p className="mt-1 font-medium">{project.framework || "Custom"}</p>
+        <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
+          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Build Command</p>
+          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full">{project.buildCommand}</p>
         </div>
-        <div className="p-4 border rounded-xl">
-          <p className="text-xs text-muted font-medium uppercase tracking-wide">Build Command</p>
-          <p className="mt-1 font-mono text-sm">{project.buildCommand}</p>
+        <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
+          <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Output Directory</p>
+          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full">{project.outputDir}</p>
         </div>
-        <div className="p-4 border rounded-xl">
-          <p className="text-xs text-muted font-medium uppercase tracking-wide">Output Directory</p>
-          <p className="mt-1 font-mono text-sm">{project.outputDir}</p>
-        </div>
-      </div>
-
-      <div className="flex gap-4 mb-8 border-b pb-0 overflow-x-auto">
-        <span className="pb-3 border-b-2 border-accent text-sm font-medium whitespace-nowrap">Deployments</span>
-        <Link href={`/dashboard/projects/${id}/domains`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Domains
-        </Link>
-        <Link href={`/dashboard/projects/${id}/functions`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Functions
-        </Link>
-        <Link href={`/dashboard/projects/${id}/collaborators`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Collaborators
-        </Link>
-        <Link href={`/dashboard/projects/${id}/notifications`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Notifications
-        </Link>
-        <Link href={`/dashboard/projects/${id}/redirects`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Redirects
-        </Link>
-        <Link href={`/dashboard/projects/${id}/settings`} className="pb-3 text-sm text-muted hover:text-text whitespace-nowrap">
-          Settings
-        </Link>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-4">Deployments</h2>
+        <h2 className="text-xl font-semibold mb-5">Deployments</h2>
         {project.deployments.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed rounded-xl">
-            <p className="text-muted text-sm">No deployments yet. Click "Deploy" to start.</p>
+          <div className="text-center py-16 border border-border bg-surface/30 rounded-xl shadow-sm">
+            <h3 className="text-lg font-medium text-text mb-1">No deployments yet</h3>
+            <p className="text-muted text-sm mb-4">Trigger a deployment from GitHub or deploy manually.</p>
+            <form action={deployProject.bind(null, project.id)}>
+              <button
+                type="submit"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors shadow-sm"
+              >
+                Deploy Now
+              </button>
+            </form>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="border border-border rounded-xl bg-bg/50 shadow-sm divide-y divide-border">
             {project.deployments.map((dep) => (
               <Link
                 key={dep.id}
                 href={`/dashboard/projects/${project.id}/deployments/${dep.id}`}
-                className="flex items-center justify-between p-4 border rounded-xl hover:bg-white/[0.03] transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full ${statusColors[dep.status]?.split(" ")[0] || "bg-gray-400"}`} />
+                <div className="flex items-start gap-4 mb-3 sm:mb-0">
+                  <span className={`mt-1.5 w-2.5 h-2.5 shrink-0 rounded-full ${statusDots[dep.status] || "bg-zinc-500"}`} />
                   <div>
-                    <p className="text-sm font-medium">
-                      {dep.commitMsg || `Deploy #${dep.id.slice(0, 8)}`}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {dep.branch} &middot; {dep.commitSha.slice(0, 7) || "HEAD"}
-                    </p>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <p className="text-sm font-medium text-text hover:underline truncate max-w-[200px] sm:max-w-md">
+                        {dep.commitMsg || `Manual Deployment`}
+                      </p>
+                      <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold uppercase tracking-wider ${statusColors[dep.status] || "bg-zinc-800 border-zinc-700 text-zinc-400"}`}>
+                        {dep.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted">
+                      <span className="flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        {dep.branch || "main"}
+                      </span>
+                      {dep.commitSha && (
+                        <span className="flex items-center gap-1.5 font-mono">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                          </svg>
+                          {dep.commitSha.slice(0, 7)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right text-xs text-muted">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColors[dep.status] || "bg-white/[0.05] text-muted"}`}>
-                    {dep.status}
-                  </span>
-                  <p className="mt-1">{new Date(dep.createdAt).toLocaleString()}</p>
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center text-xs text-muted pl-6 sm:pl-0">
+                  <p>{new Date(dep.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="mt-0.5">{new Date(dep.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
                 </div>
               </Link>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

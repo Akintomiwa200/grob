@@ -19,13 +19,13 @@ export default function LoginPage() {
   if (!checked) return null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B0E14]">
+    <div className="flex min-h-screen items-center justify-center bg-bg">
       <div className="mx-auto w-full max-w-sm px-8">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#6E5BFF]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
             <span className="text-xl font-bold text-white">G</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#E7E9EE]">Log in to Grob</h1>
+          <h1 className="text-2xl font-bold text-text">Log in to Grob</h1>
         </div>
 
         <div className="space-y-3">
@@ -60,12 +60,12 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="my-6 h-px bg-[#212633]" />
+        <div className="my-6 h-px bg-border" />
 
         <div className="space-y-3">
           <button
             onClick={() => signIn("saml", { callbackUrl: "/dashboard" })}
-            className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-[#212633] px-4 py-3 text-sm font-medium text-[#E7E9EE] transition-colors hover:bg-white/[0.05]"
+            className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors hover:bg-white/[0.05]"
           >
             <Lock className="h-4 w-4" strokeWidth={1.75} />
             Continue with SAML SSO
@@ -73,7 +73,7 @@ export default function LoginPage() {
 
           <button
             onClick={() => signIn("passkey", { callbackUrl: "/dashboard" })}
-            className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-[#212633] px-4 py-3 text-sm font-medium text-[#E7E9EE] transition-colors hover:bg-white/[0.05]"
+            className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors hover:bg-white/[0.05]"
           >
             <Fingerprint className="h-4 w-4" strokeWidth={1.75} />
             Login with Passkey
@@ -83,14 +83,14 @@ export default function LoginPage() {
         <div className="mt-6 text-center">
           <button
             onClick={() => signIn("email", { callbackUrl: "/dashboard" })}
-            className="inline-flex cursor-pointer items-center gap-1 text-sm text-[#6E5BFF] hover:underline"
+            className="inline-flex cursor-pointer items-center gap-1 text-sm text-accent hover:underline"
           >
             Continue with Email
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <p className="mt-8 text-center text-xs text-[#8B92A4]">
+        <p className="mt-8 text-center text-xs text-muted">
           By signing in, you agree to our Terms of Service.
         </p>
       </div>

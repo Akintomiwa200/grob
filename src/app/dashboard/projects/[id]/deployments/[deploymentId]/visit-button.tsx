@@ -30,7 +30,7 @@ export function VisitButton({
       <button
         type="button"
         disabled
-        className="cursor-not-allowed rounded-lg bg-[#212633] px-4 py-2 text-sm font-medium text-[#8B92A4]"
+        className="cursor-not-allowed rounded-lg bg-border px-4 py-2 text-sm font-medium text-muted"
       >
         Visit
       </button>
@@ -43,7 +43,7 @@ export function VisitButton({
         href={toUrl(primaryUrl)}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-l-lg bg-[#6E5BFF] px-4 py-2 text-sm font-medium text-white hover:bg-[#7D6BFF]"
+        className="rounded-l-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:brightness-110"
       >
         Visit
       </a>
@@ -51,13 +51,13 @@ export function VisitButton({
         type="button"
         aria-label="Show all domains"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center rounded-r-lg border-l border-white/20 bg-[#6E5BFF] px-2 py-2 text-white hover:bg-[#7D6BFF]"
+        className="flex items-center rounded-r-lg border-l border-white/20 bg-accent px-2 py-2 text-white hover:brightness-110"
       >
         <ChevronDown className="h-4 w-4" />
       </button>
 
       {open && domains.length > 0 && (
-        <div className="absolute right-0 top-full z-10 mt-2 w-64 overflow-hidden rounded-lg border border-[#212633] bg-[#12151D] py-1 shadow-xl">
+        <div className="absolute right-0 top-full z-10 mt-2 w-64 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-xl">
           {domains.map((d) => (
             <a
               key={d}
@@ -65,7 +65,7 @@ export function VisitButton({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setOpen(false)}
-              className="block truncate px-3 py-2 text-sm text-[#E7E9EE] hover:bg-white/[0.05]"
+              className="block truncate px-3 py-2 text-sm text-text hover:bg-white/[0.05]"
             >
               {d}
             </a>

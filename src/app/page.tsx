@@ -89,33 +89,53 @@ function BuildConsole() {
     let line = 0;
     let char = 0;
     let cancelled = false;
+    let timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    function typeNext() {
-      if (cancelled || line >= LOG_LINES.length) return;
+    function schedule(fn: () => void, ms: number) {
+      const id = setTimeout(fn, ms);
+      timeouts.push(id);
+      return id;
+    }
+
+    function restart() {
+      line = 0;
+      char = 0;
+      setVisibleLines(0);
+      setCharCount(0);
+      schedule(() => typeLoop(), 300);
+    }
+
+    function typeLoop() {
+      if (cancelled) return;
       const target = LOG_LINES[line].text.length;
       if (char <= target) {
         setVisibleLines(line + 1);
         setCharCount(char);
         char += Math.max(1, Math.floor(target / 22));
-        setTimeout(typeNext, 14);
+        schedule(typeLoop, 14);
       } else {
         line += 1;
         char = 0;
-        setTimeout(typeNext, line === LOG_LINES.length ? 0 : 180);
+        if (line >= LOG_LINES.length) {
+          schedule(restart, 3000);
+        } else {
+          schedule(typeLoop, 180);
+        }
       }
     }
-    const t = setTimeout(typeNext, 300);
+
+    schedule(typeLoop, 300);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      timeouts.forEach(clearTimeout);
     };
   }, [inView]);
 
   const kindColor: Record<string, string> = {
-    cmd: "text-[#E7E9EE]",
-    info: "text-[#8B92A4]",
-    ok: "text-[#3DDC97]",
-    live: "text-[#3DDC97]",
+    cmd: "text-text",
+    info: "text-muted",
+    ok: "text-success",
+    live: "text-success",
   };
 
   return (
@@ -124,14 +144,14 @@ function BuildConsole() {
       initial={{ opacity: 0, scale: 0.96, y: 20 }}
       animate={inView ? { opacity: 1, scale: 1, y: 0 } : {}}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-md rounded-2xl border border-[#212633] bg-[#12151D] shadow-[0_0_0_1px_rgba(110,91,255,0.08),0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+      className="relative w-full max-w-md rounded-2xl border border-border bg-surface shadow-[0_0_0_1px_rgba(110,91,255,0.08),0_20px_60px_-20px_rgba(0,0,0,0.6)]"
     >
       {/* window chrome */}
-      <div className="flex items-center gap-1.5 border-b border-[#212633] px-4 py-3">
+      <div className="flex items-center gap-1.5 border-b border-border px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]/70" />
-        <span className="ml-3 font-mono text-xs text-[#8B92A4]">
+        <span className="ml-3 font-mono text-xs text-muted">
           deploy.log
         </span>
       </div>
@@ -144,18 +164,18 @@ function BuildConsole() {
             <div key={i} className={kindColor[l.kind]}>
               {text}
               {isCurrent && charCount < l.text.length && (
-                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-[#6E5BFF] align-middle" />
+                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-accent align-middle" />
               )}
             </div>
           );
         })}
         {visibleLines >= LOG_LINES.length && (
-          <div className="mt-2 flex items-center gap-1.5 text-[#3DDC97]">
+          <div className="mt-2 flex items-center gap-1.5 text-success">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC97] opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC97]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
-            <span className="text-xs text-[#8B92A4]">
+            <span className="text-xs text-muted">
               watching for changes…
             </span>
           </div>
@@ -193,15 +213,15 @@ function Pipeline() {
             className="relative"
           >
             <div className="mb-4 flex items-center gap-3">
-              <span className="font-mono text-xs text-[#6E5BFF]">0{i + 1}</span>
-              <div className="h-px flex-1 bg-[#212633]" />
+              <span className="font-mono text-xs text-accent">0{i + 1}</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
             <s.icon
-              className="mb-3 h-5 w-5 text-[#E7E9EE]"
+              className="mb-3 h-5 w-5 text-text"
               strokeWidth={1.75}
             />
-            <h3 className="mb-1 font-semibold text-[#E7E9EE]">{s.label}</h3>
-            <p className="text-sm text-[#8B92A4]">{s.desc}</p>
+            <h3 className="mb-1 font-semibold text-text">{s.label}</h3>
+            <p className="text-sm text-muted">{s.desc}</p>
           </motion.div>
         ))}
       </div>
@@ -252,15 +272,15 @@ function FeatureCard({
       initial="hidden"
       animate={inView ? "show" : "hidden"}
       variants={fadeUp}
-      whileHover={{ y: -4, borderColor: "#6E5BFF66" }}
+      whileHover={{ y: -4 }}
       transition={{ duration: 0.25 }}
-      className="group rounded-xl border border-[#212633] bg-[#12151D] p-6 transition-colors"
+      className="group rounded-xl border border-border bg-surface p-6 transition-colors"
     >
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[#6E5BFF]/10 transition-colors group-hover:bg-[#6E5BFF]/20">
-        <Icon className="h-5 w-5 text-[#6E5BFF]" strokeWidth={1.75} />
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 transition-colors group-hover:bg-accent/20">
+        <Icon className="h-5 w-5 text-accent" strokeWidth={1.75} />
       </div>
-      <h3 className="mb-2 font-semibold text-[#E7E9EE]">{title}</h3>
-      <p className="text-sm leading-relaxed text-[#8B92A4]">{desc}</p>
+      <h3 className="mb-2 font-semibold text-text">{title}</h3>
+      <p className="text-sm leading-relaxed text-muted">{desc}</p>
     </motion.div>
   );
 }
@@ -275,27 +295,56 @@ export default function HomePage() {
   const heroY = useTransform(scrollY, [0, 400], [0, 60]);
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] font-[Inter,sans-serif] text-[#E7E9EE]">
-      {/* ambient grid texture */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "linear-gradient(#E7E9EE 1px, transparent 1px), linear-gradient(90deg, #E7E9EE 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
+    <div className="min-h-screen bg-bg font-[Inter,sans-serif] text-text">
+      {/* Full-viewport decorative canvas */}
+      <div className="pointer-events-none fixed inset-0 select-none">
+        {/* Main glow — violet splash */}
+        <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent opacity-[0.15] blur-[140px]" />
+        <div className="absolute -right-32 top-1/4 h-[400px] w-[400px] rounded-full bg-success opacity-[0.08] blur-[120px]" />
+        <div className="absolute -left-20 bottom-1/4 h-[300px] w-[300px] rounded-full bg-signal opacity-[0.06] blur-[100px]" />
+
+        {/* Stars */}
+        <svg className="absolute left-[12%] top-[18%] h-5 w-5 text-accent/50 animate-[pulse_3s_ease-in-out_infinite]" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
+        </svg>
+        <svg className="absolute right-[20%] top-[12%] h-3 w-3 text-success/50 animate-[pulse_4s_ease-in-out_infinite_1s]" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
+        </svg>
+        <svg className="absolute left-[8%] bottom-[28%] h-4 w-4 text-signal/45 animate-[pulse_3.5s_ease-in-out_infinite_0.5s]" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
+        </svg>
+        <svg className="absolute right-[8%] bottom-[18%] h-3.5 w-3.5 text-accent/40 animate-[pulse_4.5s_ease-in-out_infinite_2s]" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
+        </svg>
+        <svg className="absolute left-[48%] top-[6%] h-2.5 w-2.5 text-white/30 animate-[pulse_3s_ease-in-out_infinite_1.5s]" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
+        </svg>
+
+        {/* Dots */}
+        <span className="absolute left-[22%] top-[42%] h-1.5 w-1.5 rounded-full bg-accent/40 animate-[pulse_4s_ease-in-out_infinite_0.3s]" />
+        <span className="absolute right-[10%] top-[45%] h-2 w-2 rounded-full bg-success/35 animate-[pulse_3.5s_ease-in-out_infinite_0.8s]" />
+        <span className="absolute left-[5%] top-[60%] h-1.5 w-1.5 rounded-full bg-white/20 animate-[pulse_4s_ease-in-out_infinite_1.2s]" />
+        <span className="absolute right-[35%] bottom-[12%] h-2 w-2 rounded-full bg-signal/35 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
+
+        {/* Decorative rings — right side */}
+        <svg className="absolute -right-12 top-1/3 h-80 w-80 -translate-y-1/2 text-accent/[0.06]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.4">
+          <circle cx="50" cy="50" r="42" />
+          <circle cx="50" cy="50" r="32" />
+          <circle cx="50" cy="50" r="22" />
+          <circle cx="50" cy="50" r="12" />
+        </svg>
+      </div>
 
       {/* Nav */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="sticky top-0 z-50 border-b border-[#212633] bg-[#0B0E14]/80 backdrop-blur-md"
+        className="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6E5BFF]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
               <span className="font-[Space_Grotesk,sans-serif] text-sm font-bold text-white">
                 G
               </span>
@@ -307,13 +356,13 @@ export default function HomePage() {
           <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-[#8B92A4] transition-colors hover:text-[#E7E9EE]"
+              className="text-sm font-medium text-muted transition-colors hover:text-text"
             >
               Sign in
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center rounded-lg bg-[#6E5BFF] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#7D6BFF]"
+              className="inline-flex items-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:brightness-110"
             >
               Get started
             </Link>
@@ -325,17 +374,17 @@ export default function HomePage() {
         {/* Hero */}
         <motion.section
           style={{ opacity: heroOpacity, y: heroY }}
-          className="mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8"
+          className="relative mx-auto flex min-h-[90vh] max-w-7xl items-center px-4 sm:px-6 lg:px-8"
         >
-          <div className="grid items-center gap-16 lg:grid-cols-2">
+          <div className="grid w-full items-center gap-16 lg:grid-cols-2">
             <motion.div variants={stagger} initial="hidden" animate="show">
               <motion.div
                 variants={fadeUp}
-                className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#212633] bg-[#12151D] px-3 py-1 text-xs text-[#8B92A4]"
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted"
               >
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC97] opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3DDC97]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
                 </span>
                 All systems operational
               </motion.div>
@@ -346,12 +395,12 @@ export default function HomePage() {
               >
                 Push code.
                 <br />
-                Watch it <span className="text-[#6E5BFF]">go live</span>.
+                Watch it <span className="text-accent">go live</span>.
               </motion.h1>
 
               <motion.p
                 variants={fadeUp}
-                className="mt-6 max-w-lg text-lg leading-relaxed text-[#8B92A4]"
+                className="mt-6 max-w-lg text-lg leading-relaxed text-muted"
               >
                 Import your Git repository, and Grob builds, deploys, and serves
                 it from the edge — with zero configuration and zero downtime.
@@ -363,14 +412,14 @@ export default function HomePage() {
               >
                 <Link
                   href="/login"
-                  className="group inline-flex items-center gap-2 rounded-lg bg-[#6E5BFF] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-[#7D6BFF]"
+                  className="group inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-base font-medium text-white transition-colors hover:brightness-110"
                 >
                   Start deploying
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center rounded-lg border border-[#212633] px-6 py-3 text-base font-medium text-[#E7E9EE] transition-colors hover:bg-[#12151D]"
+                  className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-base font-medium text-text transition-colors hover:bg-surface"
                 >
                   View docs
                 </Link>
@@ -384,14 +433,14 @@ export default function HomePage() {
         </motion.section>
 
         {/* Pipeline */}
-        <section className="border-t border-[#212633] py-20">
+        <section className="py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="mb-12 font-mono text-xs uppercase tracking-widest text-[#6E5BFF]"
+              className="mb-12 font-mono text-xs uppercase tracking-widest text-accent"
             >
               From commit to production
             </motion.p>
@@ -400,7 +449,7 @@ export default function HomePage() {
         </section>
 
         {/* Features */}
-        <section className="border-t border-[#212633] py-20">
+        <section className="py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-6 md:grid-cols-3">
               {FEATURES.map((f, i) => (
@@ -411,7 +460,7 @@ export default function HomePage() {
         </section>
 
         {/* CTA band */}
-        <section className="border-t border-[#212633] py-24">
+        <section className="py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -422,12 +471,12 @@ export default function HomePage() {
             <h2 className="font-[Space_Grotesk,sans-serif] text-3xl font-bold tracking-tight md:text-4xl">
               Ship your next project today
             </h2>
-            <p className="mt-4 text-[#8B92A4]">
+            <p className="mt-4 text-muted">
               Free for personal projects. No credit card required.
             </p>
             <Link
               href="/login"
-              className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#6E5BFF] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-[#7D6BFF]"
+              className="mt-8 inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-base font-medium text-white transition-colors hover:brightness-110"
             >
               Get started
               <ArrowRight className="h-4 w-4" />
@@ -436,14 +485,14 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-[#212633] py-10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 text-sm text-[#8B92A4] sm:px-6 lg:px-8">
+      <footer className="py-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 text-sm text-muted sm:px-6 lg:px-8">
           <span>© {new Date().getFullYear()} Grob</span>
           <div className="flex gap-6">
-            <Link href="/login" className="hover:text-[#E7E9EE]">
+            <Link href="/login" className="hover:text-text">
               Docs
             </Link>
-            <Link href="/login" className="hover:text-[#E7E9EE]">
+            <Link href="/login" className="hover:text-text">
               GitHub
             </Link>
           </div>

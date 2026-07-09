@@ -94,7 +94,7 @@ export default async function DeploymentDetailPage(props: {
       <div className="mb-6">
         <Link
           href={`/dashboard/projects/${id}`}
-          className="mb-1 block text-sm text-[#8B92A4] hover:text-[#E7E9EE]"
+          className="mb-1 block text-sm text-muted hover:text-text"
         >
           &larr; {project.name}
         </Link>
@@ -102,13 +102,13 @@ export default async function DeploymentDetailPage(props: {
 
       <DeploymentTabs projectId={id} deploymentId={deploymentId} />
 
-      <div className="mt-6 flex flex-col gap-8 border-b border-[#212633] pb-8 md:flex-row md:items-start">
+      <div className="mt-6 flex flex-col gap-8 border-b border-border pb-8 md:flex-row md:items-start">
         {/* Preview thumbnail */}
-        <div className="flex h-32 w-full shrink-0 flex-col items-center justify-center gap-2 rounded-xl bg-[#0B0E14] md:w-48">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6E5BFF] text-sm font-bold text-white">
+        <div className="flex h-32 w-full shrink-0 flex-col items-center justify-center gap-2 rounded-xl bg-bg md:w-48">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
             {project.name.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs font-medium uppercase tracking-widest text-[#8B92A4]">
+          <span className="text-xs font-medium uppercase tracking-widest text-muted">
             {project.name}
           </span>
         </div>
@@ -117,7 +117,7 @@ export default async function DeploymentDetailPage(props: {
         <div className="flex-1">
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
             <div>
-              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+              <p className="text-xs uppercase tracking-wide text-muted">
                 Status
               </p>
               <p className="mt-1.5 flex items-center gap-1.5 text-sm">
@@ -128,10 +128,10 @@ export default async function DeploymentDetailPage(props: {
               </p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+              <p className="text-xs uppercase tracking-wide text-muted">
                 Smart CDN
               </p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#E7E9EE]">
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-text">
                 <svg
                   viewBox="0 0 20 20"
                   fill="none"
@@ -150,10 +150,10 @@ export default async function DeploymentDetailPage(props: {
               </p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+              <p className="text-xs uppercase tracking-wide text-muted">
                 Deployment Duration
               </p>
-              <p className="mt-1.5 text-sm text-[#E7E9EE]">
+              <p className="mt-1.5 text-sm text-text">
                 {formatDuration(durationMs)}
               </p>
             </div>
@@ -164,7 +164,7 @@ export default async function DeploymentDetailPage(props: {
 
           {domains.length > 0 && (
             <div className="mt-6">
-              <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+              <p className="text-xs uppercase tracking-wide text-muted">
                 Domains
               </p>
               <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -174,7 +174,7 @@ export default async function DeploymentDetailPage(props: {
                       href={(d.includes("localhost") || d.includes("127.0.0.1")) ? `http://${d}` : `https://${d}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-[#E7E9EE] hover:text-[#6E5BFF] hover:underline"
+                      className="text-sm text-text hover:text-accent hover:underline"
                     >
                       {d}
                   </a>
@@ -185,29 +185,29 @@ export default async function DeploymentDetailPage(props: {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 border-b border-[#212633] py-6 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 border-b border-border py-6 sm:grid-cols-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+          <p className="text-xs uppercase tracking-wide text-muted">
             Commit
           </p>
-          <p className="mt-1.5 truncate font-mono text-sm text-[#E7E9EE]">
+          <p className="mt-1.5 truncate font-mono text-sm text-text">
             {deployment.commitSha.slice(0, 7)}
             {deployment.commitMsg ? ` — ${deployment.commitMsg}` : ""}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+          <p className="text-xs uppercase tracking-wide text-muted">
             Branch
           </p>
-          <p className="mt-1.5 font-mono text-sm text-[#E7E9EE]">
+          <p className="mt-1.5 font-mono text-sm text-text">
             {deployment.branch}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-[#8B92A4]">
+          <p className="text-xs uppercase tracking-wide text-muted">
             Deployed
           </p>
-          <p className="mt-1.5 text-sm text-[#E7E9EE]">
+          <p className="mt-1.5 text-sm text-text">
             {new Date(deployment.createdAt).toLocaleString()}
           </p>
         </div>
@@ -223,8 +223,8 @@ export default async function DeploymentDetailPage(props: {
       </div>
 
       {deployment.status === "success" && (
-        <div className="mt-8 border-t border-[#212633] pt-8">
-          <h2 className="mb-3 text-lg font-semibold text-[#E7E9EE]">Actions</h2>
+        <div className="mt-8 border-t border-border pt-8">
+          <h2 className="mb-3 text-lg font-semibold text-text">Actions</h2>
           <form
             action={rollbackToDeployment.bind(null, project.id, deployment.id)}
           >

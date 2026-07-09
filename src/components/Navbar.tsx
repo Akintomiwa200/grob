@@ -66,34 +66,44 @@ export default function Navbar({
   }, [projectId, deploymentId]);
 
   const orgName = data?.orgName ?? userName ?? "Account";
+  const displayInitial = (
+    data?.orgName
+      ? data.orgName.charAt(0)
+      : (userName || "Account").charAt(0)
+  ).toUpperCase();
+  const currentProject = projectId ? data?.projectName : null;
+  const breadcrumbLabel = currentProject || orgName;
+  const breadcrumbInitial = currentProject
+    ? currentProject.charAt(0).toUpperCase()
+    : displayInitial;
 
   return (
-    <header className="hidden h-14 items-center justify-between border-b border-[#212633] bg-[#0B0E14] px-6 md:flex">
+    <header className="hidden h-14 shrink-0 items-center justify-between bg-[#0B0E14] px-6 md:flex">
       <div className="flex min-w-0 items-center gap-2 text-sm">
         <button
           type="button"
           className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-white/[0.05]"
         >
-          {data?.orgImage ? (
+          {data?.orgImage && !currentProject ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={data.orgImage} alt="" className="h-5 w-5 rounded-full" />
           ) : (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#6E5BFF] text-[10px] font-bold text-white">
-              {orgName.charAt(0).toUpperCase()}
+              {breadcrumbInitial}
             </span>
           )}
-          <span className="font-medium text-[#E7E9EE]">{orgName}</span>
+          <span className="font-medium text-[#E7E9EE]">{breadcrumbLabel}</span>
           <ChevronsUpDown className="h-3 w-3 text-[#8B92A4]" />
         </button>
 
-        {projectId && data?.projectName && (
+        {currentProject && data?.projectName && (
           <>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
             <Link
-              href={`/dashboard/projects/${projectId}`}
-              className="truncate rounded-md px-2 py-1.5 font-medium text-[#E7E9EE] hover:bg-white/[0.05]"
+              href={`/dashboard/projects`}
+              className="truncate rounded-md px-2 py-1.5 text-muted hover:bg-white/[0.05] hover:text-text"
             >
-              {data.projectName}
+              All Projects
             </Link>
           </>
         )}

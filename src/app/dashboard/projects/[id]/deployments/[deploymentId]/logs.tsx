@@ -31,12 +31,12 @@ function invocationLine(inv: Invocation) {
 type LogType = "info" | "success" | "warning" | "error" | "command" | "system";
 
 const LOG_COLORS: Record<LogType, string> = {
-  info: "text-[#5BC0DE]",
-  success: "text-[#3DDC97]",
-  warning: "text-[#FFB020]",
-  error: "text-[#FF6B6B]",
-  command: "text-[#E7E9EE] font-medium",
-  system: "text-[#5A6478]",
+  info: "text-info",
+  success: "text-success",
+  warning: "text-signal",
+  error: "text-error",
+  command: "text-text font-medium",
+  system: "text-muted",
 };
 
 function parseLogLine(line: string): { type: LogType; text: string; timestamp: string } | null {
@@ -53,7 +53,7 @@ function parseLogLine(line: string): { type: LogType; text: string; timestamp: s
 function LogLine({ line }: { line: string }) {
   const parsed = parseLogLine(line);
   if (!parsed) {
-    return <div className="text-[#5A6478]">{line}</div>;
+    return <div className="text-muted">{line}</div>;
   }
   return (
     <div className={`${LOG_COLORS[parsed.type]}`}>
@@ -145,26 +145,26 @@ export function DeploymentLogs({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold tracking-wide text-[#8B92A4] uppercase">Deployment Logs</h2>
+        <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">Deployment Logs</h2>
         <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-          liveStatus === "success" ? "bg-[#3DDC97]/10 text-[#3DDC97]" :
-          liveStatus === "failed" ? "bg-[#FF6B6B]/10 text-[#FF6B6B]" :
-          liveStatus === "building" ? "bg-[#5BC0DE]/10 text-[#5BC0DE]" :
-          "bg-white/[0.05] text-[#8B92A4]"
+          liveStatus === "success" ? "bg-success/10 text-success" :
+          liveStatus === "failed" ? "bg-error/10 text-error" :
+          liveStatus === "building" ? "bg-info/10 text-info" :
+          "bg-white/[0.05] text-muted"
         }`}>
           {liveStatus}
         </span>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex overflow-hidden rounded-lg border border-[#212633]">
+        <div className="flex overflow-hidden rounded-lg border border-border">
           <button
             type="button"
             onClick={() => setView("build")}
             className={`px-3 py-1.5 text-xs font-medium transition-colors ${
               view === "build"
-                ? "bg-white/[0.08] text-[#E7E9EE]"
-                : "text-[#8B92A4] hover:bg-white/[0.04]"
+                ? "bg-white/[0.08] text-text"
+                : "text-muted hover:bg-white/[0.04]"
             }`}
           >
             Build
@@ -172,10 +172,10 @@ export function DeploymentLogs({
           <button
             type="button"
             onClick={() => setView("runtime")}
-            className={`border-l border-[#212633] px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`border-l border-border px-3 py-1.5 text-xs font-medium transition-colors ${
               view === "runtime"
-                ? "bg-white/[0.08] text-[#E7E9EE]"
-                : "text-[#8B92A4] hover:bg-white/[0.04]"
+                ? "bg-white/[0.08] text-text"
+                : "text-muted hover:bg-white/[0.04]"
             }`}
           >
             Runtime
@@ -186,7 +186,7 @@ export function DeploymentLogs({
           <select
             value={pathFilter}
             onChange={(e) => setPathFilter(e.target.value)}
-            className="rounded-lg border border-[#212633] bg-[#12151D] px-2.5 py-1.5 text-xs text-[#E7E9EE]"
+            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text"
           >
             <option value="all">All paths</option>
             {paths.map((p) => (
@@ -198,22 +198,22 @@ export function DeploymentLogs({
         <button
           type="button"
           onClick={handleCopy}
-          className="ml-auto flex items-center gap-1.5 rounded-lg border border-[#212633] px-2.5 py-1.5 text-xs text-[#8B92A4] transition-colors hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+          className="ml-auto flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-white/[0.05] hover:text-text"
         >
           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
 
-      <div className="max-h-96 overflow-y-auto overflow-x-auto rounded-xl bg-[#0C0F14] border border-[#212633] p-4 font-mono text-xs leading-[1.7]">
+      <div className="max-h-96 overflow-y-auto overflow-x-auto rounded-xl bg-bg border border-border p-4 font-mono text-xs leading-[1.7]">
         {view === "build" ? (
           buildLines.length === 0 ? (
-            <div className="text-[#5A6478]">Waiting for logs...</div>
+            <div className="text-muted">Waiting for logs...</div>
           ) : (
             buildLines.map((line, i) => <LogLine key={i} line={line} />)
           )
         ) : (
-          <pre className="whitespace-pre-wrap text-[#5A6478]">
+          <pre className="whitespace-pre-wrap text-muted">
             {displayedText}
           </pre>
         )}

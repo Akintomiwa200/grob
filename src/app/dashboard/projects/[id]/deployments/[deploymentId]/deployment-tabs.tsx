@@ -20,7 +20,7 @@ export function DeploymentTabs({
   const base = `/dashboard/projects/${projectId}/deployments/${deploymentId}`;
 
   return (
-    <div className="flex gap-6 border-b border-[#212633]">
+    <div className="flex gap-6 border-b border-border">
       {TABS.map((tab) => {
         const href = tab.segment ? `${base}/${tab.segment}` : base;
         const active = pathname === href;
@@ -29,7 +29,7 @@ export function DeploymentTabs({
             key={tab.label}
             href={href}
             className={`relative pb-3 text-sm font-medium transition-colors ${
-              active ? "text-[#E7E9EE]" : "text-[#8B92A4] hover:text-[#E7E9EE]"
+              active ? "text-text" : "text-muted hover:text-text"
             }`}
           >
             {tab.label}

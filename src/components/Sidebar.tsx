@@ -153,7 +153,7 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="sidebar-scroll flex-1 overflow-y-auto px-3 pb-4">
         {NAV_GROUPS.map((group, i) => (
           <div key={i} className="mb-3">
             <div className="space-y-0.5">

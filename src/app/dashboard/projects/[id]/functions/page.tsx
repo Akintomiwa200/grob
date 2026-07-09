@@ -33,17 +33,13 @@ export default async function FunctionsPage(props: { params: Promise<{ id: strin
   if (!project) notFound();
 
   return (
-    <div>
-      <Link
-        href={`/dashboard/projects/${id}`}
-        className="text-sm text-muted hover:text-text mb-1 block"
-      >
-        &larr; {project.name}
-      </Link>
-      <h1 className="text-2xl font-bold mb-1">Functions</h1>
-      <p className="text-muted text-sm mb-8">
-        Manage serverless functions for your project.
-      </p>
+    <div className="space-y-6 max-w-4xl">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-1">Functions</h2>
+        <p className="text-muted text-sm">
+          Manage serverless functions for your project.
+        </p>
+      </div>
 
       <div className="max-w-2xl space-y-6">
         <form

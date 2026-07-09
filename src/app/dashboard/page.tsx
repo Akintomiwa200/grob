@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import AddNewButton from "@/components/AddNewButton";
 
 // Simple helper for the deployment status icon
 const StatusIcon = ({ status }: { status: string }) => {
@@ -17,7 +18,7 @@ const StatusIcon = ({ status }: { status: string }) => {
       </div>
     );
   return (
-    <div className="w-5 h-5 border border-zinc-700 rounded-full flex items-center justify-center text-[10px] text-zinc-500">
+    <div className="w-5 h-5 border border-border rounded-full flex items-center justify-center text-[10px] text-muted">
       ~
     </div>
   );
@@ -45,12 +46,12 @@ export default async function DashboardPage() {
   const succeeded = allDeployments.filter((d) => d.status === "success").length;
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto text-zinc-100">
+    <div className="p-6 max-w-[1400px] mx-auto text-text">
       {/* Top Search Bar */}
       <div className="flex items-center justify-between mb-8 gap-4">
         <div className="relative flex-1 max-w-xl">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -65,21 +66,21 @@ export default async function DashboardPage() {
           <input
             type="text"
             placeholder="Search Projects..."
-            className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+            className="w-full pl-10 pr-4 py-2 bg-bg/50 border border-border rounded-lg text-sm focus:outline-none focus:border-zinc-600 transition-colors"
           />
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex border border-zinc-800 rounded-lg overflow-hidden">
-            <button className="px-3 py-2 bg-zinc-800/50 hover:bg-zinc-800">
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button className="px-3 py-2 bg-surface/50 hover:bg-surface">
               <div className="w-4 h-4 border border-zinc-400 rounded-sm"></div>
             </button>
-            <button className="px-3 py-2 hover:bg-zinc-800/50 border-l border-r border-zinc-800">
+            <button className="px-3 py-2 hover:bg-surface/50 border-l border-r border-border">
               <div className="w-4 h-4 border border-zinc-400 rounded-sm grid grid-cols-2 gap-0.5">
                 <div></div>
                 <div></div>
               </div>
             </button>
-            <button className="px-3 py-2 hover:bg-zinc-800/50">
+            <button className="px-3 py-2 hover:bg-surface/50">
               <div className="w-4 h-4 border border-zinc-400 rounded-sm grid grid-cols-3 gap-0.5">
                 <div></div>
                 <div></div>
@@ -87,22 +88,7 @@ export default async function DashboardPage() {
               </div>
             </button>
           </div>
-          <button className="px-4 py-2 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors flex items-center gap-2">
-            Add New...
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
+          <AddNewButton />
         </div>
       </div>
 
@@ -112,7 +98,7 @@ export default async function DashboardPage() {
           {/* Usage */}
           <div>
             <h2 className="text-sm font-medium mb-4">Usage</h2>
-            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4">
+            <div className="bg-bg/30 border border-border rounded-xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium">Last 30 days</span>
                 <button className="text-[10px] bg-white text-black px-2 py-0.5 rounded font-medium">
@@ -120,31 +106,31 @@ export default async function DashboardPage() {
                 </button>
               </div>
 
-              <div className="space-y-3 text-xs text-zinc-400">
-                <div className="flex items-center justify-between border-b border-zinc-800/50 pb-2">
+              <div className="space-y-3 text-xs text-muted">
+                <div className="flex items-center justify-between border-b border-border/50 pb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
                     Image Optimization - Transformations
                   </div>
-                  <span className="text-zinc-200">
+                  <span className="text-text">
                     120 <span className="text-zinc-600">/ 5K</span>
                   </span>
                 </div>
-                <div className="flex items-center justify-between border-b border-zinc-800/50 pb-2">
+                <div className="flex items-center justify-between border-b border-border/50 pb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
                     Edge Requests
                   </div>
-                  <span className="text-zinc-200">
+                  <span className="text-text">
                     18K <span className="text-zinc-600">/ 1M</span>
                   </span>
                 </div>
-                <div className="flex items-center justify-between border-b border-zinc-800/50 pb-2">
+                <div className="flex items-center justify-between border-b border-border/50 pb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
                     Fluid Active CPU
                   </div>
-                  <span className="text-zinc-200">
+                  <span className="text-text">
                     2m 55s <span className="text-zinc-600">/ 4h</span>
                   </span>
                 </div>
@@ -153,7 +139,7 @@ export default async function DashboardPage() {
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
                     ISR Reads
                   </div>
-                  <span className="text-zinc-200">
+                  <span className="text-text">
                     9.4K <span className="text-zinc-600">/ 1M</span>
                   </span>
                 </div>
@@ -164,17 +150,17 @@ export default async function DashboardPage() {
           {/* Alerts */}
           <div>
             <h2 className="text-sm font-medium mb-4">Alerts</h2>
-            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6 text-center">
+            <div className="bg-bg/30 border border-border rounded-xl p-6 text-center">
               <h3 className="text-sm font-medium mb-1">
                 Get alerted for anomalies
               </h3>
-              <p className="text-xs text-zinc-500 mb-4">
+              <p className="text-xs text-muted mb-4">
                 Automatically monitor your projects for anomalies and get
                 notified.
               </p>
               <Link
                 href="/dashboard/settings"
-                className="text-xs font-medium text-white bg-zinc-800 hover:bg-zinc-700 px-4 py-1.5 rounded-lg inline-block transition-colors"
+                className="text-xs font-medium text-white bg-surface hover:bg-zinc-700 px-4 py-1.5 rounded-lg inline-block transition-colors"
               >
                 Upgrade to Pro
               </Link>
@@ -184,10 +170,10 @@ export default async function DashboardPage() {
           {/* Recent Previews */}
           <div>
             <h2 className="text-sm font-medium mb-4">Recent Previews</h2>
-            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-10 text-center flex flex-col items-center justify-center min-h-[160px]">
-              <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3">
+            <div className="bg-bg/30 border border-border rounded-xl p-10 text-center flex flex-col items-center justify-center min-h-[160px]">
+              <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center mb-3">
                 <svg
-                  className="w-5 h-5 text-zinc-400"
+                  className="w-5 h-5 text-muted"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -206,7 +192,7 @@ export default async function DashboardPage() {
                   />
                 </svg>
               </div>
-              <p className="text-xs text-zinc-500 max-w-[200px]">
+              <p className="text-xs text-muted max-w-[200px]">
                 Preview deployments that you have recently visited or created
                 will appear here.
               </p>
@@ -221,10 +207,10 @@ export default async function DashboardPage() {
           </div>
 
           {projects.length === 0 ? (
-            <div className="text-center py-20 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
-              <div className="w-16 h-16 mx-auto mb-4 bg-zinc-800/50 rounded-xl flex items-center justify-center">
+            <div className="text-center py-20 border-2 border-dashed border-border rounded-xl bg-bg/20">
+              <div className="w-16 h-16 mx-auto mb-4 bg-surface/50 rounded-xl flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-zinc-500"
+                  className="w-8 h-8 text-muted"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -237,10 +223,10 @@ export default async function DashboardPage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-1 text-zinc-300">
+              <h3 className="text-lg font-medium mb-1 text-text">
                 No projects yet
               </h3>
-              <p className="text-zinc-500 text-sm mb-4">
+              <p className="text-muted text-sm mb-4">
                 Create your first project to get started
               </p>
               <Link
@@ -256,29 +242,29 @@ export default async function DashboardPage() {
                 <Link
                   key={project.id}
                   href={`/dashboard/projects/${project.id}`}
-                  className="group block bg-zinc-900/20 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all"
+                  className="group block bg-bg/20 border border-border rounded-xl p-4 hover:border-border transition-all"
                 >
                   {/* Card Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3 truncate flex-1">
-                      <div className="w-8 h-8 rounded-lg bg-zinc-800/80 flex-shrink-0 flex items-center justify-center text-xs font-medium text-zinc-300">
+                      <div className="w-8 h-8 rounded-lg bg-surface/80 flex-shrink-0 flex items-center justify-center text-xs font-medium text-text">
                         {project.name.substring(0, 2).toUpperCase()}
                       </div>
                       <div className="truncate">
                         <h3 className="text-sm font-medium truncate">
                           {project.name}
                         </h3>
-                        <p className="text-[10px] text-zinc-500 truncate">
+                        <p className="text-[10px] text-muted truncate">
                           {project.name.toLowerCase().replace(/\s/g, "-")}
                           .vercel.app
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <div className="w-6 h-6 rounded-full border border-zinc-700 flex items-center justify-center">
-                        <span className="text-[10px] text-zinc-400">✓</span>
+                      <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center">
+                        <span className="text-[10px] text-muted">✓</span>
                       </div>
-                      <button className="text-zinc-500 hover:text-zinc-300 p-1">
+                      <button className="text-muted hover:text-text p-1">
                         <svg
                           className="w-4 h-4"
                           fill="none"
@@ -301,7 +287,7 @@ export default async function DashboardPage() {
                     <div className="w-4 h-4 rounded-full bg-zinc-700 flex items-center justify-center text-[8px] text-white">
                       A
                     </div>
-                    <span className="text-[10px] text-zinc-500 font-medium">
+                    <span className="text-[10px] text-muted font-medium">
                       Akitomiwa200/
                       {project.name.toLowerCase().replace(/\s/g, "-")}
                     </span>
@@ -309,10 +295,10 @@ export default async function DashboardPage() {
 
                   {/* Last Deployment Info */}
                   <div className="space-y-2">
-                    <p className="text-sm text-zinc-300 line-clamp-1">
+                    <p className="text-sm text-text line-clamp-1">
                       {project.description || "update project configuration"}
                     </p>
-                    <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                    <div className="flex items-center justify-between text-[11px] text-muted">
                       <span className="flex items-center gap-1">
                         <StatusIcon status="success" />
                         <span>main</span>
@@ -333,7 +319,7 @@ export default async function DashboardPage() {
           {/* Show More Footer */}
           {projects.length > 0 && (
             <div className="mt-6 text-center">
-              <button className="text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button className="text-sm font-medium text-muted hover:text-text transition-colors">
                 Show More
               </button>
             </div>

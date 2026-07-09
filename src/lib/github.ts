@@ -65,3 +65,51 @@ export async function deleteGitHubWebhook(userId: string, repoFullName: string, 
   const [owner, repo] = repoFullName.split("/");
   await octokit.rest.repos.deleteWebhook({ owner, repo, hook_id: hookId });
 }
+
+export async function getRepoFramework(userId: string, repoFullName: string) {
+  const octokit = await getOctokit(userId);
+  if (!octokit) return null;
+
+  const [owner, repo] = repoFullName.split("/");
+  try {
+    const { data } = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      path: "",
+    });
+
+    if (!Array.isArray(data)) return null;
+
+    const files = data.map((item) => item.name);
+
+    if (files.includes("next.config.js") || files.includes("next.config.ts") || files.includes("next.config.mjs")) {
+      return { framework: "nextjs", build: "npm run build", out: ".next", install: "npm install" };
+    }
+    if (files.includes("vite.config.js") || files.includes("vite.config.ts")) {
+      return { framework: "vite", build: "npm run build", out: "dist", install: "npm install" };
+    }
+    if (files.includes("vue.config.js") || files.includes("nuxt.config.js") || files.includes("nuxt.config.ts")) {
+      return { framework: "vue", build: "npm run build", out: "dist", install: "npm install" };
+    }
+    if (files.includes("svelte.config.js")) {
+      return { framework: "svelte", build: "npm run build", out: "build", install: "npm install" };
+    }
+    if (files.includes("Cargo.toml")) {
+      return { framework: "rust", build: "cargo build --release", out: "target/release", install: "cargo fetch" };
+    }
+    if (files.includes("go.mod")) {
+      return { framework: "go", build: "go build -o main .", out: ".", install: "go mod download" };
+    }
+    if (files.includes("requirements.txt") || files.includes("pyproject.toml")) {
+      return { framework: "python", build: "python -m compileall .", out: ".", install: "pip install -r requirements.txt" };
+    }
+    if (files.includes("package.json")) {
+      return { framework: "node", build: "npm run build", out: "dist", install: "npm install" };
+    }
+
+    return { framework: "static", build: "", out: ".", install: "" };
+  } catch (error) {
+    console.error("Error detecting framework:", error);
+    return null;
+  }
+}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { saveEnvVars, saveProjectConfig, createWebhook, toggleWebhook, deleteWebhook, saveProtection } from "./actions";
+import { EnvVarsForm } from "./EnvVarsForm";
 
 export default async function ProjectSettingsPage(props: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -20,15 +21,11 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
   if (!project) notFound();
 
   return (
-    <div>
-      <Link
-        href={`/dashboard/projects/${id}`}
-        className="text-sm text-muted hover:text-text mb-1 block"
-      >
-        &larr; {project.name}
-      </Link>
-      <h1 className="text-2xl font-bold mb-1">Settings</h1>
-      <p className="text-muted text-sm mb-8">Manage project configuration.</p>
+    <div className="space-y-12 max-w-4xl">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-1">Settings</h2>
+        <p className="text-muted text-sm">Manage project configuration.</p>
+      </div>
 
       <div className="max-w-2xl space-y-10">
         <section>
@@ -92,68 +89,11 @@ export default async function ProjectSettingsPage(props: { params: Promise<{ id:
           <p className="text-sm text-muted mb-4">
             These are injected at build time.
           </p>
-          <form action={saveEnvVars.bind(null, project.id)} className="space-y-3">
-            <div id="envVars">
-              {project.envVars.length === 0 ? (
-                <div className="p-4 border-2 border-dashed rounded-xl text-center text-sm text-muted" id="emptyState">
-                  No environment variables yet
-                </div>
-              ) : null}
-              {project.envVars.map((env, i) => (
-                <div key={env.id} className="flex gap-2 mb-2 env-row">
-                  <input
-                    name="key[]"
-                    defaultValue={env.key}
-                    placeholder="KEY"
-                    className="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
-                  />
-                  <input
-                    name="value[]"
-                    defaultValue={env.value}
-                    placeholder="value"
-                    className="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      const row = (e.target as HTMLElement).closest(".env-row");
-                      row?.remove();
-                    }}
-                    className="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const container = document.getElementById("envVars");
-                  const empty = document.getElementById("emptyState");
-                  if (empty) empty.remove();
-                  const row = document.createElement("div");
-                  row.className = "flex gap-2 mb-2 env-row";
-                  row.innerHTML = `
-                    <input name="key[]" placeholder="KEY" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent" />
-                    <input name="value[]" placeholder="value" class="flex-[2] px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/50 bg-transparent" />
-                    <button type="button" onclick="this.closest('.env-row').remove()" class="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]">&times;</button>
-                  `;
-                  container?.appendChild(row);
-                }}
-                className="px-3 py-2 text-sm border rounded-lg hover:bg-white/[0.05]"
-              >
-                + Add Variable
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90"
-              >
-                Save Variables
-              </button>
-            </div>
-          </form>
+          <EnvVarsForm 
+            projectId={project.id} 
+            initialVars={project.envVars} 
+            saveAction={saveEnvVars.bind(null, project.id)} 
+          />
         </section>
 
         <section>

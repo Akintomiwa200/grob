@@ -16,15 +16,11 @@ export default async function CollaboratorsPage(props: { params: Promise<{ id: s
   if (!project) notFound();
 
   return (
-    <div>
-      <Link
-        href={`/dashboard/projects/${id}`}
-        className="text-sm text-muted hover:text-text mb-1 block"
-      >
-        &larr; {project.name}
-      </Link>
-      <h1 className="text-2xl font-bold mb-1">Collaborators</h1>
-      <p className="text-muted text-sm mb-8">Manage team members for this project.</p>
+    <div className="space-y-6 max-w-4xl">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-1">Collaborators</h2>
+        <p className="text-muted text-sm">Manage team members for this project.</p>
+      </div>
 
       <div className="max-w-2xl space-y-6">
         <form action={addCollaborator.bind(null, project.id)} className="flex gap-3">

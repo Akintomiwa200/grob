@@ -16,17 +16,13 @@ export default async function NotificationsPage(props: { params: Promise<{ id: s
   if (!project) notFound();
 
   return (
-    <div>
-      <Link
-        href={`/dashboard/projects/${id}`}
-        className="text-sm text-muted hover:text-text mb-1 block"
-      >
-        &larr; {project.name}
-      </Link>
-      <h1 className="text-2xl font-bold mb-1">Notifications</h1>
-      <p className="text-muted text-sm mb-8">
-        Get deployment status updates in Slack, Discord, or any webhook.
-      </p>
+    <div className="space-y-6 max-w-4xl">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-1">Notifications</h2>
+        <p className="text-muted text-sm">
+          Get deployment status updates in Slack, Discord, or any webhook.
+        </p>
+      </div>
 
       <div className="max-w-2xl space-y-6">
         <form action={addNotification.bind(null, project.id)} className="space-y-3 p-4 border rounded-xl">
