@@ -1,7 +1,11 @@
 import { getServerSession } from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+import Facebook from "next-auth/providers/facebook";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -13,10 +17,59 @@ export const authOptions = {
         params: { scope: "read:user user:email repo" },
       },
     }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID || "",
+      clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
+    }),
+    Facebook({
+      clientId: process.env.AUTH_FACEBOOK_ID || "",
+      clientSecret: process.env.AUTH_FACEBOOK_SECRET || "",
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Invalid credentials");
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        });
+
+        if (!user || !user.password) {
+          throw new Error("Invalid credentials");
+        }
+
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isCorrectPassword) {
+          throw new Error("Invalid credentials");
+        }
+
+        return user;
+      }
+    }),
   ],
+  session: {
+    strategy: "jwt" as const,
+  },
+  pages: {
+    signIn: '/login',
+  },
   callbacks: {
-    session({ session, user }: any) {
-      session.user.id = user.id;
+    jwt({ token, user }: any) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    session({ session, token }: any) {
+      if (session.user) session.user.id = token.id ?? token.sub;
       return session;
     },
   },

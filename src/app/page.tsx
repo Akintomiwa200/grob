@@ -43,6 +43,11 @@ import {
   Loader2,
 } from "lucide-react";
 
+import { Pipeline } from "@/components/Pipeline";
+import { PowerfulFeatures } from "@/components/PowerfulFeatures";
+import { FAQ } from "@/components/FAQ";
+import { ContactFooter } from "@/components/ContactFooter";
+
 // ---------------------------------------------------------------------------
 // Animation variants
 // ---------------------------------------------------------------------------
@@ -189,45 +194,7 @@ function BuildConsole() {
 // Pipeline steps — a genuine sequence, so numbering is earned here.
 // ---------------------------------------------------------------------------
 
-const STEPS = [
-  { icon: GitBranch, label: "Push", desc: "git push to any branch" },
-  { icon: Hammer, label: "Build", desc: "Detected & compiled automatically" },
-  { icon: Rocket, label: "Deploy", desc: "Shipped to the edge globally" },
-  { icon: Globe2, label: "Live", desc: "SSL & domain ready instantly" },
-];
 
-function Pipeline() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <div ref={ref} className="relative">
-      <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-        {STEPS.map((s, i) => (
-          <motion.div
-            key={s.label}
-            custom={i}
-            initial="hidden"
-            animate={inView ? "show" : "hidden"}
-            variants={fadeUp}
-            className="relative"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <span className="font-mono text-xs text-accent">0{i + 1}</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <s.icon
-              className="mb-3 h-5 w-5 text-text"
-              strokeWidth={1.75}
-            />
-            <h3 className="mb-1 font-semibold text-text">{s.label}</h3>
-            <p className="text-sm text-muted">{s.desc}</p>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Feature cards
@@ -418,7 +385,7 @@ export default function HomePage() {
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <Link
-                  href="/login"
+                  href="/docs"
                   className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-base font-medium text-text transition-colors hover:bg-surface"
                 >
                   View docs
@@ -433,71 +400,16 @@ export default function HomePage() {
         </motion.section>
 
         {/* Pipeline */}
-        <section className="py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="mb-12 font-mono text-xs uppercase tracking-widest text-accent"
-            >
-              From commit to production
-            </motion.p>
-            <Pipeline />
-          </div>
-        </section>
+        <Pipeline />
 
-        {/* Features */}
-        <section className="py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-6 md:grid-cols-3">
-              {FEATURES.map((f, i) => (
-                <FeatureCard key={f.title} i={i} {...f} />
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Powerful Features */}
+        <PowerfulFeatures />
 
-        {/* CTA band */}
-        <section className="py-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8"
-          >
-            <h2 className="font-[Space_Grotesk,sans-serif] text-3xl font-bold tracking-tight md:text-4xl">
-              Ship your next project today
-            </h2>
-            <p className="mt-4 text-muted">
-              Free for personal projects. No credit card required.
-            </p>
-            <Link
-              href="/login"
-              className="mt-8 inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-base font-medium text-white transition-colors hover:brightness-110"
-            >
-              Get started
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
-        </section>
+        {/* FAQ */}
+        <FAQ />
       </main>
 
-      <footer className="py-10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 text-sm text-muted sm:px-6 lg:px-8">
-          <span>© {new Date().getFullYear()} Grob</span>
-          <div className="flex gap-6">
-            <Link href="/login" className="hover:text-text">
-              Docs
-            </Link>
-            <Link href="/login" className="hover:text-text">
-              GitHub
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <ContactFooter />
     </div>
   );
 }

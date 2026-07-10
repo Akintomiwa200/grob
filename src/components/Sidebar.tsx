@@ -12,6 +12,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { signOut } from "next-auth/react";
 import {
   LayoutGrid,
   Box,
@@ -38,6 +40,9 @@ import {
   Search,
   MoreHorizontal,
   Bell,
+  LogOut,
+  Settings,
+  User as UserIcon,
 } from "lucide-react";
 
 type NavItem = {
@@ -107,6 +112,18 @@ type SidebarUser = {
 
 export default function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function isActive(href: string) {
     if (href === "/dashboard") {
@@ -192,7 +209,48 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
       </nav>
 
       {/* Account row */}
-      <div className="flex items-center gap-3 border-t border-[#212633] px-4 py-3">
+      <div className="flex items-center gap-3 border-t border-[#212633] px-4 py-3 relative" ref={menuRef}>
+        {/* Drop-up Menu */}
+        {isMenuOpen && (
+          <div className="absolute bottom-14 left-4 right-4 rounded-xl border border-[#212633] bg-[#12151D] p-1 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+             <div className="px-3 py-2 border-b border-[#212633] mb-1">
+                <p className="text-sm font-medium text-[#E7E9EE] truncate">{user.name || "Account"}</p>
+                <p className="text-xs text-[#8B92A4] truncate">{user.email}</p>
+             </div>
+             
+             <Link 
+               href="/dashboard/profile"
+               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#E7E9EE] hover:bg-white/[0.05] transition-colors"
+               onClick={() => setIsMenuOpen(false)}
+             >
+               <UserIcon className="h-4 w-4 text-[#8B92A4]" />
+               Profile
+             </Link>
+             
+             <Link 
+               href="/dashboard/settings"
+               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#E7E9EE] hover:bg-white/[0.05] transition-colors"
+               onClick={() => setIsMenuOpen(false)}
+             >
+               <Settings className="h-4 w-4 text-[#8B92A4]" />
+               Settings
+             </Link>
+             
+             <div className="my-1 border-t border-[#212633]" />
+             
+             <button
+               onClick={() => {
+                 setIsMenuOpen(false);
+                 signOut({ callbackUrl: "/" });
+               }}
+               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#FF5F57] hover:bg-[#FF5F57]/10 transition-colors"
+             >
+               <LogOut className="h-4 w-4" />
+               Sign out
+             </button>
+          </div>
+        )}
+
         {user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.image} alt="" className="h-7 w-7 rounded-full" />
@@ -206,15 +264,16 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
         </span>
         <button
           type="button"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="More options"
-          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
         <button
           type="button"
           aria-label="Notifications"
-          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
         >
           <Bell className="h-4 w-4" />
         </button>
