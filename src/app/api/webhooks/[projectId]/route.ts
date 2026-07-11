@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { simulateBuild, logEntriesToString } from "@/lib/build-simulator";
+import { simulateBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build-simulator";
 
 export async function POST(
   req: Request,
@@ -9,7 +9,10 @@ export async function POST(
 
   const project = await prisma.project.findFirst({
     where: { id: projectId },
-    include: { webhooks: { where: { active: true } } },
+    include: {
+      webhooks: { where: { active: true } },
+      envVars: true,
+    },
   });
 
   if (!project) {
@@ -26,6 +29,22 @@ export async function POST(
   const commitMsg = body?.head_commit?.message || body?.commits?.[0]?.message || "Auto-deploy via webhook";
   const commitSha = body?.after || body?.head_commit?.id || crypto.randomUUID().slice(0, 40);
   const branch = (body?.ref || "refs/heads/main").replace("refs/heads/", "");
+
+  // Separate build-time and runtime env vars
+  const buildTimeVars: Record<string, string> = {};
+  const runtimeVars: Record<string, string> = {};
+  for (const ev of project.envVars) {
+    if (ev.buildTime) {
+      buildTimeVars[ev.key] = ev.value;
+    } else {
+      runtimeVars[ev.key] = ev.value;
+    }
+  }
+
+  const envVars: BuildEnvVars = {
+    buildTime: buildTimeVars,
+    runtime: runtimeVars,
+  };
 
   const deployment = await prisma.deployment.create({
     data: {
@@ -50,6 +69,7 @@ export async function POST(
     },
     deployment.id,
     (entry) => entries.push(entry),
+    envVars,
   );
 
   await prisma.deployment.update({

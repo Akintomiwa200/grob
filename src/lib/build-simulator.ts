@@ -9,6 +9,11 @@ export type LogEntry = {
   timestamp: string;
 };
 
+export interface BuildEnvVars {
+  buildTime: Record<string, string>;
+  runtime: Record<string, string>;
+}
+
 function now() {
   const d = new Date();
   return d.toLocaleTimeString("en-US", { hour12: false });
@@ -112,6 +117,7 @@ export async function simulateBuild(
   },
   deploymentId: string,
   onLog: (entry: LogEntry) => void,
+  envVars?: BuildEnvVars,
 ) {
   const t = () => now();
   let failed = false;
@@ -123,6 +129,12 @@ export async function simulateBuild(
   const err = (text: string) => onLog({ type: "error", text, timestamp: t() });
   const cmd = (text: string) => onLog({ type: "command", text, timestamp: t() });
   const sys = (text: string) => onLog({ type: "system", text, timestamp: t() });
+
+  const buildEnv: Record<string, string> = {
+    ...process.env,
+    ...envVars?.buildTime,
+    NODE_ENV: "production",
+  };
 
   try {
     const hasGitUrl = project.gitUrl && project.gitUrl.trim().length > 0;
@@ -158,14 +170,12 @@ export async function simulateBuild(
         shell: true,
         timeout: 180_000,
         all: true,
+        env: buildEnv,
       });
       for (const line of installResult.all?.split("\n").filter(Boolean) || []) {
         info(line);
       }
 
-      const packageCount = existsSync(join(runDir, "node_modules"))
-        ? runDir
-        : 0;
       ok(`Dependencies installed`);
 
       info(`Running build...`);
@@ -175,30 +185,119 @@ export async function simulateBuild(
         shell: true,
         timeout: 300_000,
         all: true,
+        env: buildEnv,
       });
       for (const line of buildResult.all?.split("\n").filter(Boolean) || []) {
         cmd(line);
       }
       ok(`Build completed successfully`);
 
-      const outputPath = join(runDir, project.outputDir);
       const deployPath = join(process.cwd(), "deployments-data", deploymentId);
       mkdirSync(deployPath, { recursive: true });
 
-      if (existsSync(outputPath)) {
-        cpSync(outputPath, deployPath, { recursive: true });
-        ok(`Output copied from ${project.outputDir}`);
-      } else {
-        warn(`Output directory "${project.outputDir}" not found — copying project root`);
-        const files = ["index.html", "out", "dist", "build", ".next"].filter(
-          (f) => existsSync(join(runDir, f)),
+      // Check for Next.js standalone mode
+      const nextStandalone = join(runDir, ".next", "standalone", "server.js");
+      const nextOutput = join(runDir, ".next");
+
+      if (existsSync(nextStandalone)) {
+        // Next.js standalone mode — copy the full standalone output + static + public
+        sys(`Detected Next.js standalone mode — copying server output...`);
+
+        const standaloneDir = join(runDir, ".next", "standalone");
+        cpSync(standaloneDir, deployPath, { recursive: true });
+
+        // Copy .next/static into .next/static inside standalone
+        const staticSrc = join(runDir, ".next", "static");
+        const staticDest = join(deployPath, ".next", "static");
+        if (existsSync(staticSrc)) {
+          mkdirSync(staticDest, { recursive: true });
+          cpSync(staticSrc, staticDest, { recursive: true });
+        }
+
+        // Copy public directory if it exists
+        const publicSrc = join(runDir, "public");
+        const publicDest = join(deployPath, "public");
+        if (existsSync(publicSrc)) {
+          mkdirSync(publicDest, { recursive: true });
+          cpSync(publicSrc, publicDest, { recursive: true });
+        }
+
+        // Write runtime env vars file for the server to read
+        if (envVars?.runtime && Object.keys(envVars.runtime).length > 0) {
+          const envContent = Object.entries(envVars.runtime)
+            .map(([k, v]) => `${k}=${v}`)
+            .join("\n");
+          writeFileSync(join(deployPath, ".env"), envContent, "utf-8");
+        }
+
+        // Write a marker file so the preview route knows this is a server
+        writeFileSync(
+          join(deployPath, ".grob-server"),
+          JSON.stringify({ type: "nextjs-standalone", port: 3000 }),
+          "utf-8",
         );
-        for (const f of files) {
-          const src = join(runDir, f);
-          const dest = join(deployPath, f);
-          if (existsSync(src)) {
-            cpSync(src, dest, { recursive: true });
+
+        ok(`Next.js standalone server copied`);
+        info(`Server will be started on first request`);
+      } else if (existsSync(nextOutput)) {
+        // Next.js output mode (not standalone) — copy .next output for static export
+        sys(`Detected Next.js output — copying build output...`);
+        const outputPath = join(runDir, project.outputDir);
+        if (existsSync(outputPath) && project.outputDir !== ".next") {
+          cpSync(outputPath, deployPath, { recursive: true });
+          ok(`Output copied from ${project.outputDir}`);
+        } else {
+          // Copy the full .next directory for potential SSR
+          cpSync(nextOutput, deployPath, { recursive: true });
+
+          // Copy public directory
+          const publicSrc = join(runDir, "public");
+          if (existsSync(publicSrc)) {
+            cpSync(publicSrc, join(deployPath, "public"), { recursive: true });
           }
+
+          // Write runtime env vars
+          if (envVars?.runtime && Object.keys(envVars.runtime).length > 0) {
+            const envContent = Object.entries(envVars.runtime)
+              .map(([k, v]) => `${k}=${v}`)
+              .join("\n");
+            writeFileSync(join(deployPath, ".env"), envContent, "utf-8");
+          }
+
+          writeFileSync(
+            join(deployPath, ".grob-server"),
+            JSON.stringify({ type: "nextjs", port: 3000 }),
+            "utf-8",
+          );
+
+          ok(`Next.js build output copied`);
+        }
+      } else {
+        // Generic static output
+        const outputPath = join(runDir, project.outputDir);
+        if (existsSync(outputPath)) {
+          cpSync(outputPath, deployPath, { recursive: true });
+          ok(`Output copied from ${project.outputDir}`);
+        } else {
+          warn(`Output directory "${project.outputDir}" not found — copying common outputs`);
+          const files = ["index.html", "out", "dist", "build"].filter(
+            (f) => existsSync(join(runDir, f)),
+          );
+          for (const f of files) {
+            const src = join(runDir, f);
+            const dest = join(deployPath, f);
+            if (existsSync(src)) {
+              cpSync(src, dest, { recursive: true });
+            }
+          }
+        }
+
+        // Write runtime env vars for any framework
+        if (envVars?.runtime && Object.keys(envVars.runtime).length > 0) {
+          const envContent = Object.entries(envVars.runtime)
+            .map(([k, v]) => `${k}=${v}`)
+            .join("\n");
+          writeFileSync(join(deployPath, ".env"), envContent, "utf-8");
         }
       }
     } else {

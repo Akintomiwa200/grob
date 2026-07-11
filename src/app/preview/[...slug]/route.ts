@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, lstatSync, readdirSync } from "fs";
 import { join, extname } from "path";
+import { execa } from "execa";
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -20,7 +21,190 @@ const MIME: Record<string, string> = {
   ".map": "application/json",
   ".txt": "text/plain; charset=utf-8",
   ".xml": "application/xml",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".wasm": "application/wasm",
 };
+
+const runningServers = new Map<string, ReturnType<typeof execa>>();
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getPort(deploymentId: string): number {
+  return 10000 + (hashString(deploymentId) % 50000);
+}
+
+function loadEnvFile(deployDir: string): Record<string, string> {
+  const envFile = join(deployDir, ".env");
+  const env: Record<string, string> = {};
+  if (existsSync(envFile)) {
+    const content = readFileSync(envFile, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx > 0) {
+        env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+      }
+    }
+  }
+  return env;
+}
+
+async function waitForServer(port: number, timeoutMs: number): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/`, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(1000),
+      });
+      if (res.ok || res.status < 500) return true;
+    } catch {
+      // not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return false;
+}
+
+async function getOrCreateServer(
+  deploymentId: string,
+  deployDir: string,
+): Promise<{ port: number; ready: boolean }> {
+  const markerPath = join(deployDir, ".grob-server");
+  if (!existsSync(markerPath)) return { port: 0, ready: false };
+
+  const existing = runningServers.get(deploymentId);
+  if (existing && !existing.killed) {
+    return { port: getPort(deploymentId), ready: true };
+  }
+
+  let serverConfig: { type: string; port: number };
+  try {
+    serverConfig = JSON.parse(readFileSync(markerPath, "utf-8"));
+  } catch {
+    return { port: 0, ready: false };
+  }
+
+  const port = getPort(deploymentId);
+  const runtimeEnv = loadEnvFile(deployDir);
+  const env = { ...process.env, ...runtimeEnv, PORT: String(port) };
+
+  if (serverConfig.type === "nextjs-standalone") {
+    const serverJs = join(deployDir, "server.js");
+    if (!existsSync(serverJs)) return { port: 0, ready: false };
+
+    const child = execa("node", [serverJs], {
+      cwd: deployDir,
+      env,
+      stdio: "pipe",
+      detached: false,
+    });
+    runningServers.set(deploymentId, child);
+    child.on("error", () => runningServers.delete(deploymentId));
+    child.on("exit", () => runningServers.delete(deploymentId));
+
+    const ready = await waitForServer(port, 15000);
+    return { port, ready };
+  }
+
+  if (serverConfig.type === "nextjs") {
+    const nextBin = join(deployDir, "node_modules", ".bin", "next");
+    const serverJs = join(deployDir, "server.js");
+
+    if (existsSync(nextBin)) {
+      const child = execa(nextBin, ["start", "-p", String(port)], {
+        cwd: deployDir,
+        env,
+        stdio: "pipe",
+        detached: false,
+      });
+      runningServers.set(deploymentId, child);
+      child.on("error", () => runningServers.delete(deploymentId));
+      child.on("exit", () => runningServers.delete(deploymentId));
+
+      const ready = await waitForServer(port, 20000);
+      return { port, ready };
+    }
+
+    if (existsSync(serverJs)) {
+      const child = execa("node", [serverJs], {
+        cwd: deployDir,
+        env,
+        stdio: "pipe",
+        detached: false,
+      });
+      runningServers.set(deploymentId, child);
+      child.on("error", () => runningServers.delete(deploymentId));
+      child.on("exit", () => runningServers.delete(deploymentId));
+
+      const ready = await waitForServer(port, 15000);
+      return { port, ready };
+    }
+  }
+
+  return { port: 0, ready: false };
+}
+
+async function proxyRequest(
+  req: Request,
+  deploymentId: string,
+  pathParts: string[],
+): Promise<Response> {
+  const deployDir = join(process.cwd(), "deployments-data", deploymentId);
+  if (!existsSync(deployDir)) {
+    return new Response("Deployment not found", { status: 404 });
+  }
+
+  const markerPath = join(deployDir, ".grob-server");
+  if (!existsSync(markerPath)) {
+    return new Response("Not a server deployment", { status: 404 });
+  }
+
+  const { port, ready } = await getOrCreateServer(deploymentId, deployDir);
+  if (!ready || port <= 0) {
+    return new Response("Server not ready", { status: 503 });
+  }
+
+  const targetPath = pathParts.length > 0 ? "/" + pathParts.join("/") : "/";
+
+  try {
+    const headers = new Headers();
+    req.headers.forEach((value, key) => {
+      if (key !== "host") headers.set(key, value);
+    });
+
+    const proxyRes = await fetch(`http://127.0.0.1:${port}${targetPath}`, {
+      method: req.method,
+      headers,
+      body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
+      signal: AbortSignal.timeout(30000),
+    });
+
+    const responseHeaders = new Headers();
+    proxyRes.headers.forEach((value, key) => {
+      responseHeaders.set(key, value);
+    });
+
+    return new Response(proxyRes.body, {
+      status: proxyRes.status,
+      headers: responseHeaders,
+    });
+  } catch {
+    return new Response("Server error", { status: 502 });
+  }
+}
 
 export async function GET(
   _req: Request,
@@ -35,16 +219,22 @@ export async function GET(
   const deployDir = join(process.cwd(), "deployments-data", deploymentId);
 
   if (!existsSync(deployDir)) {
-    // Try looking for index.html as fallback
     return new Response("Deployment not found", { status: 404 });
   }
 
+  // Server deployment — proxy to running process
+  const markerPath = join(deployDir, ".grob-server");
+  if (existsSync(markerPath)) {
+    return proxyRequest(_req, deploymentId, pathParts);
+  }
+
+  // Static file serving
   let filePath: string;
   if (pathParts.length === 0) {
     filePath = join(deployDir, "index.html");
     if (!existsSync(filePath)) {
       const items = readdirSync(deployDir).filter(
-        (f) => f !== "." && f !== "..",
+        (f) => f !== "." && f !== ".." && !f.startsWith(".") && f !== "node_modules",
       );
       if (items.length === 1) {
         const candidate = join(deployDir, items[0]);
@@ -83,4 +273,32 @@ export async function GET(
   return new Response(content, {
     headers: { "Content-Type": contentType },
   });
+}
+
+export async function POST(req: Request, props: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await props.params;
+  if (!slug || slug.length === 0) return new Response("Not found", { status: 404 });
+  const [deploymentId, ...pathParts] = slug;
+  return proxyRequest(req, deploymentId, pathParts);
+}
+
+export async function PUT(req: Request, props: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await props.params;
+  if (!slug || slug.length === 0) return new Response("Not found", { status: 404 });
+  const [deploymentId, ...pathParts] = slug;
+  return proxyRequest(req, deploymentId, pathParts);
+}
+
+export async function DELETE(req: Request, props: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await props.params;
+  if (!slug || slug.length === 0) return new Response("Not found", { status: 404 });
+  const [deploymentId, ...pathParts] = slug;
+  return proxyRequest(req, deploymentId, pathParts);
+}
+
+export async function PATCH(req: Request, props: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await props.params;
+  if (!slug || slug.length === 0) return new Response("Not found", { status: 404 });
+  const [deploymentId, ...pathParts] = slug;
+  return proxyRequest(req, deploymentId, pathParts);
 }

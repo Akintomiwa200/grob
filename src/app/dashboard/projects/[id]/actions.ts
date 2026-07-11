@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { simulateBuild, logEntriesToString } from "@/lib/build-simulator";
+import { simulateBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build-simulator";
 
 export async function deployProject(projectId: string) {
   const session = await auth();
@@ -11,8 +11,25 @@ export async function deployProject(projectId: string) {
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: session.user.id },
+    include: { envVars: true },
   });
   if (!project) throw new Error("Project not found");
+
+  // Separate build-time and runtime env vars
+  const buildTimeVars: Record<string, string> = {};
+  const runtimeVars: Record<string, string> = {};
+  for (const ev of project.envVars) {
+    if (ev.buildTime) {
+      buildTimeVars[ev.key] = ev.value;
+    } else {
+      runtimeVars[ev.key] = ev.value;
+    }
+  }
+
+  const envVars: BuildEnvVars = {
+    buildTime: buildTimeVars,
+    runtime: runtimeVars,
+  };
 
   const deployment = await prisma.deployment.create({
     data: {
@@ -39,6 +56,7 @@ export async function deployProject(projectId: string) {
     },
     deployment.id,
     (entry) => entries.push(entry),
+    envVars,
   );
 
   await prisma.deployment.update({
