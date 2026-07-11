@@ -10,7 +10,6 @@ import {
   Power,
   PowerOff,
   Trash2,
-  Copy,
   Lock,
   Unlock,
   Info,
@@ -25,6 +24,7 @@ import {
   saveProtection,
 } from "./actions";
 import { EnvVarsForm } from "./EnvVarsForm";
+import { CopyButton } from "./CopyButton";
 
 export default async function ProjectSettingsPage(props: {
   params: Promise<{ id: string }>;
@@ -178,14 +178,7 @@ export default async function ProjectSettingsPage(props: {
                 <code className="text-xs text-text font-mono break-all flex-1">
                   {webhookUrl}
                 </code>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                  className="p-1 rounded text-muted hover:text-text hover:bg-surface transition-colors shrink-0"
-                  title="Copy URL"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
+                <CopyButton text={webhookUrl} />
               </div>
             </div>
 
