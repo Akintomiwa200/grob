@@ -138,6 +138,8 @@ export async function saveProjectConfig(projectId: string, formData: FormData) {
   await prisma.project.update({
     where: { id: projectId },
     data: {
+      name: (formData.get("name") as string) || project.name,
+      description: (formData.get("description") as string) || "",
       buildCommand: formData.get("buildCommand") as string,
       outputDir: formData.get("outputDir") as string,
       installCommand: formData.get("installCommand") as string,
@@ -147,6 +149,8 @@ export async function saveProjectConfig(projectId: string, formData: FormData) {
   });
 
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
+  revalidatePath("/dashboard/projects");
+  revalidatePath("/dashboard");
 }
 
 export async function saveProtection(projectId: string, formData: FormData) {

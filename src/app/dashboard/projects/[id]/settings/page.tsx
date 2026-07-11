@@ -71,6 +71,40 @@ export default async function ProjectSettingsPage(props: {
               action={saveProjectConfig.bind(null, project.id)}
               className="space-y-4"
             >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-muted mb-1.5">
+                    Project Name
+                  </label>
+                  <input
+                    name="name"
+                    defaultValue={project.name}
+                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted mb-1.5">
+                    Framework
+                  </label>
+                  <input
+                    name="framework"
+                    defaultValue={project.framework}
+                    placeholder="nextjs, react, vue, etc."
+                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-muted mb-1.5">
+                  Description
+                </label>
+                <input
+                  name="description"
+                  defaultValue={project.description}
+                  placeholder="A brief description of your project"
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
+                />
+              </div>
               <div>
                 <label className="block text-xs text-muted mb-1.5">
                   Git Repository URL
@@ -118,17 +152,7 @@ export default async function ProjectSettingsPage(props: {
                     className="w-full px-3 py-2.5 border border-border rounded-lg text-sm font-mono text-text bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-muted mb-1.5">
-                    Framework
-                  </label>
-                  <input
-                    name="framework"
-                    defaultValue={project.framework}
-                    placeholder="nextjs, react, vue, etc."
-                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
-                  />
-                </div>
+                <div />
               </div>
               <div className="pt-2">
                 <button
