@@ -15,6 +15,7 @@ export async function saveEnvVars(projectId: string, formData: FormData) {
 
   const keys = formData.getAll("key[]") as string[];
   const values = formData.getAll("value[]") as string[];
+  const buildTimes = formData.getAll("buildTime[]") as string[];
 
   await prisma.envVar.deleteMany({ where: { projectId } });
 
@@ -26,11 +27,12 @@ export async function saveEnvVars(projectId: string, formData: FormData) {
         projectId,
         key,
         value: values[i] || "",
-        buildTime: true,
+        buildTime: buildTimes.includes(String(i)),
       },
     });
   }
 
+  revalidatePath("/dashboard/env");
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
 }
 
