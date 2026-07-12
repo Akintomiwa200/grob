@@ -1,20 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createProject } from "./actions";
 import { GitHubRepos } from "./GitHubRepos";
 
+type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
+
+const pmCommands: Record<PackageManager, { install: string; run: string }> = {
+  npm:  { install: "npm install",            run: "npm run" },
+  pnpm: { install: "pnpm install",           run: "pnpm" },
+  yarn: { install: "yarn install",           run: "yarn" },
+  bun:  { install: "bun install",            run: "bun run" },
+};
+
 const frameworks = [
-  { value: "nextjs", label: "Next.js", build: "npm run build", out: ".next", install: "npm install" },
-  { value: "react", label: "React (Vite)", build: "npm run build", out: "dist", install: "npm install" },
-  { value: "vue", label: "Vue", build: "npm run build", out: "dist", install: "npm install" },
-  { value: "svelte", label: "Svelte", build: "npm run build", out: "build", install: "npm install" },
-  { value: "node", label: "Node.js (Generic)", build: "npm run build", out: "dist", install: "npm install" },
-  { value: "rust", label: "Rust (Cargo)", build: "cargo build --release", out: "target/release", install: "cargo fetch" },
-  { value: "go", label: "Go", build: "go build -o main .", out: ".", install: "go mod download" },
-  { value: "python", label: "Python", build: "python -m compileall .", out: ".", install: "pip install -r requirements.txt" },
-  { value: "static", label: "Static HTML", build: "", out: ".", install: "" },
+  { value: "nextjs",  label: "Next.js",          out: ".next",            needsBuild: true },
+  { value: "react",   label: "React (Vite)",     out: "dist",             needsBuild: true },
+  { value: "vue",     label: "Vue",              out: "dist",             needsBuild: true },
+  { value: "svelte",  label: "Svelte",           out: "build",            needsBuild: true },
+  { value: "node",    label: "Node.js (Generic)", out: "dist",            needsBuild: false },
+  { value: "rust",    label: "Rust (Cargo)",     out: "target/release",   needsBuild: false, install: "cargo fetch", build: "cargo build --release" },
+  { value: "go",      label: "Go",               out: ".",                needsBuild: false, install: "go mod download", build: "go build -o main ." },
+  { value: "python",  label: "Python",           out: ".",                needsBuild: false, install: "pip install -r requirements.txt", build: "python -m compileall ." },
+  { value: "static",  label: "Static HTML",      out: ".",                needsBuild: false, install: "", build: "" },
 ];
+
+function getFrameworkCommands(fw: typeof frameworks[number], pm: PackageManager) {
+  if (fw.install !== undefined && fw.build !== undefined) {
+    return { install: fw.install, build: fw.build };
+  }
+  const pmCmd = pmCommands[pm];
+  return {
+    install: pmCmd.install,
+    build: fw.needsBuild ? `${pmCmd.run} build` : "",
+  };
+}
 
 export default function NewProjectPage() {
   const [selectedRepo, setSelectedRepo] = useState<{
@@ -24,6 +44,19 @@ export default function NewProjectPage() {
     defaultBranch: string;
   } | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [packageManager, setPackageManager] = useState<PackageManager>("npm");
+
+  const applyFramework = useCallback((fwValue: string, pm: PackageManager) => {
+    const fw = frameworks.find((f) => f.value === fwValue);
+    if (!fw) return;
+    const cmds = getFrameworkCommands(fw, pm);
+    const bc = document.getElementById("buildCommand") as HTMLInputElement;
+    const od = document.getElementById("outputDir") as HTMLInputElement;
+    const ic = document.getElementById("installCommand") as HTMLInputElement;
+    if (bc) bc.value = cmds.build;
+    if (od) od.value = fw.out;
+    if (ic) ic.value = cmds.install;
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto py-10 px-4 md:px-6 text-text">
@@ -49,21 +82,32 @@ export default function NewProjectPage() {
               const gitUrlInput = document.getElementById("gitUrl") as HTMLInputElement;
               if (gitUrlInput) gitUrlInput.value = repo.cloneUrl;
 
-              // Auto-detect framework
+              // Auto-detect framework and package manager
               setIsDetecting(true);
               try {
                 const res = await fetch(`/api/github/detect-framework?repo=${encodeURIComponent(repo.fullName)}`);
                 if (res.ok) {
                   const data = await res.json();
+
+                  // Detect package manager from lockfiles
+                  if (data.packageManager) {
+                    setPackageManager(data.packageManager);
+                  }
+
                   const fwSelect = document.getElementById("framework") as HTMLSelectElement;
+                  if (fwSelect) {
+                    fwSelect.value = data.framework || "";
+                    const pm = data.packageManager || packageManager;
+                    applyFramework(data.framework || "", pm);
+                  }
+
+                  // If server returned specific commands, use them
                   const bc = document.getElementById("buildCommand") as HTMLInputElement;
                   const od = document.getElementById("outputDir") as HTMLInputElement;
                   const ic = document.getElementById("installCommand") as HTMLInputElement;
-                  
-                  if (fwSelect) fwSelect.value = data.framework || "custom";
-                  if (bc) bc.value = data.build || "";
-                  if (od) od.value = data.out || "";
-                  if (ic) ic.value = data.install || "";
+                  if (data.build && bc) bc.value = data.build;
+                  if (data.out && od) od.value = data.out;
+                  if (data.install && ic) ic.value = data.install;
                 }
               } catch (e) {
                 console.error("Failed to detect framework:", e);
@@ -123,23 +167,38 @@ export default function NewProjectPage() {
               />
             </div>
 
+            {/* Package Manager */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-text">Package Manager</label>
+              <div className="grid grid-cols-4 gap-2">
+                {(["npm", "pnpm", "yarn", "bun"] as PackageManager[]).map((pm) => (
+                  <button
+                    key={pm}
+                    type="button"
+                    onClick={() => {
+                      setPackageManager(pm);
+                      const fwSelect = document.getElementById("framework") as HTMLSelectElement;
+                      if (fwSelect?.value) applyFramework(fwSelect.value, pm);
+                    }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      packageManager === pm
+                        ? "bg-accent text-white border-accent"
+                        : "bg-bg border-border text-text hover:bg-surface"
+                    }`}
+                  >
+                    {pm}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label htmlFor="framework" className="block text-sm font-medium mb-1.5 text-text">Framework Preset</label>
               <select
                 id="framework"
                 name="framework"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-600 bg-bg transition-colors"
-                onChange={(e) => {
-                  const fw = frameworks.find((f) => f.value === e.target.value);
-                  if (fw) {
-                    const bc = document.getElementById("buildCommand") as HTMLInputElement;
-                    const od = document.getElementById("outputDir") as HTMLInputElement;
-                    const ic = document.getElementById("installCommand") as HTMLInputElement;
-                    if (bc) bc.value = fw.build;
-                    if (od) od.value = fw.out;
-                    if (ic) ic.value = fw.install;
-                  }
-                }}
+                onChange={(e) => applyFramework(e.target.value, packageManager)}
               >
                 <option value="">Custom</option>
                 {frameworks.map((fw) => (
@@ -154,7 +213,6 @@ export default function NewProjectPage() {
                 <input
                   id="buildCommand"
                   name="buildCommand"
-                  defaultValue="npm run build"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-600 bg-bg transition-colors"
                 />
               </div>
@@ -163,7 +221,6 @@ export default function NewProjectPage() {
                 <input
                   id="outputDir"
                   name="outputDir"
-                  defaultValue=".next"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-600 bg-bg transition-colors"
                 />
               </div>
@@ -174,7 +231,6 @@ export default function NewProjectPage() {
               <input
                 id="installCommand"
                 name="installCommand"
-                defaultValue="npm install"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-600 bg-bg transition-colors"
               />
             </div>

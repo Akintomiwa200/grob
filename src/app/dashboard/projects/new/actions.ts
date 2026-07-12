@@ -60,5 +60,17 @@ export async function createProject(formData: FormData) {
     }
   }
 
-  redirect(`/dashboard/projects/${project.id}`);
+  // Create a deployment record so the build can start immediately
+  const deployment = await prisma.deployment.create({
+    data: {
+      projectId: project.id,
+      status: "pending",
+      branch: defaultBranch,
+      commitSha: crypto.randomUUID().slice(0, 40),
+      commitMsg: "Initial deploy",
+    },
+  });
+
+  // Redirect to the deployment page — the TriggerBuild component will start the build
+  redirect(`/dashboard/projects/${project.id}/deployments/${deployment.id}`);
 }

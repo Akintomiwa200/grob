@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, lstatSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import { execa } from "execa";
+import type { ServerMarker } from "@/lib/build";
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -78,6 +79,21 @@ async function waitForServer(port: number, timeoutMs: number): Promise<boolean> 
   return false;
 }
 
+function resolveStartCwd(marker: ServerMarker, deployDir: string): string {
+  if (!marker.startCwd || marker.startCwd === ".") return deployDir;
+  if (marker.startCwd.startsWith("/")) return marker.startCwd;
+  return join(deployDir, marker.startCwd);
+}
+
+function interpolatePort(args: string[], port: number): string[] {
+  return args.map((a) => {
+    // Replace PORT placeholder or bare "3000" port references
+    if (a === "PORT" || a === "${PORT}") return String(port);
+    if (a === "3000" || a === ":3000" || a === "-p 3000" || a === "--port=3000" || a === "--port") return a;
+    return a.replace(/3000/g, String(port));
+  });
+}
+
 async function getOrCreateServer(
   deploymentId: string,
   deployDir: string,
@@ -90,23 +106,30 @@ async function getOrCreateServer(
     return { port: getPort(deploymentId), ready: true };
   }
 
-  let serverConfig: { type: string; port: number };
+  let marker: ServerMarker;
   try {
-    serverConfig = JSON.parse(readFileSync(markerPath, "utf-8"));
+    marker = JSON.parse(readFileSync(markerPath, "utf-8"));
   } catch {
     return { port: 0, ready: false };
   }
 
   const port = getPort(deploymentId);
   const runtimeEnv = loadEnvFile(deployDir);
+  const cwd = resolveStartCwd(marker, deployDir);
   const env = { ...process.env, ...runtimeEnv, PORT: String(port) };
 
-  if (serverConfig.type === "nextjs-standalone") {
-    const serverJs = join(deployDir, "server.js");
-    if (!existsSync(serverJs)) return { port: 0, ready: false };
+  // Resolve the start command — interpolate port into args
+  let startArgs = interpolatePort(marker.startArgs, port);
+  const startCmd = marker.startCmd;
 
-    const child = execa("node", [serverJs], {
-      cwd: deployDir,
+  // For static server (npx serve), always use absolute deployDir and explicit port
+  if (startCmd === "npx" && startArgs[0] === "serve") {
+    startArgs = ["serve", deployDir, "-l", String(port)];
+  }
+
+  try {
+    const child = execa(startCmd, startArgs, {
+      cwd,
       env,
       stdio: "pipe",
       detached: false,
@@ -115,46 +138,13 @@ async function getOrCreateServer(
     child.on("error", () => runningServers.delete(deploymentId));
     child.on("exit", () => runningServers.delete(deploymentId));
 
-    const ready = await waitForServer(port, 15000);
+    // Longer timeout for compiled languages (Java, Rust, Go) that may need startup time
+    const timeoutMs = ["java", "dotnet", "cargo", "go", "cabal", "mix", "bundle"].includes(startCmd) ? 30000 : 15000;
+    const ready = await waitForServer(port, timeoutMs);
     return { port, ready };
+  } catch {
+    return { port: 0, ready: false };
   }
-
-  if (serverConfig.type === "nextjs") {
-    const nextBin = join(deployDir, "node_modules", ".bin", "next");
-    const serverJs = join(deployDir, "server.js");
-
-    if (existsSync(nextBin)) {
-      const child = execa(nextBin, ["start", "-p", String(port)], {
-        cwd: deployDir,
-        env,
-        stdio: "pipe",
-        detached: false,
-      });
-      runningServers.set(deploymentId, child);
-      child.on("error", () => runningServers.delete(deploymentId));
-      child.on("exit", () => runningServers.delete(deploymentId));
-
-      const ready = await waitForServer(port, 20000);
-      return { port, ready };
-    }
-
-    if (existsSync(serverJs)) {
-      const child = execa("node", [serverJs], {
-        cwd: deployDir,
-        env,
-        stdio: "pipe",
-        detached: false,
-      });
-      runningServers.set(deploymentId, child);
-      child.on("error", () => runningServers.delete(deploymentId));
-      child.on("exit", () => runningServers.delete(deploymentId));
-
-      const ready = await waitForServer(port, 15000);
-      return { port, ready };
-    }
-  }
-
-  return { port: 0, ready: false };
 }
 
 async function proxyRequest(

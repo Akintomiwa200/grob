@@ -30,18 +30,7 @@ import {
   useInView,
   type Variants,
 } from "framer-motion";
-import {
-  GitBranch,
-  Hammer,
-  Rocket,
-  Globe2,
-  RotateCcw,
-  ShieldCheck,
-  ArrowRight,
-  CheckCircle2,
-  Circle,
-  Loader2,
-} from "lucide-react";
+import { GitBranch, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
 
 import { Pipeline } from "@/components/Pipeline";
 import { PowerfulFeatures } from "@/components/PowerfulFeatures";
@@ -94,7 +83,7 @@ function BuildConsole() {
     let line = 0;
     let char = 0;
     let cancelled = false;
-    let timeouts: ReturnType<typeof setTimeout>[] = [];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
 
     function schedule(fn: () => void, ms: number) {
       const id = setTimeout(fn, ms);
@@ -156,9 +145,7 @@ function BuildConsole() {
         <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]/70" />
-        <span className="ml-3 font-mono text-xs text-muted">
-          deploy.log
-        </span>
+        <span className="ml-3 font-mono text-xs text-muted">deploy.log</span>
       </div>
 
       <div className="h-[280px] overflow-hidden px-5 py-4 font-mono text-[13px] leading-6">
@@ -180,9 +167,7 @@ function BuildConsole() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
-            <span className="text-xs text-muted">
-              watching for changes…
-            </span>
+            <span className="text-xs text-muted">watching for changes…</span>
           </div>
         )}
       </div>
@@ -193,8 +178,6 @@ function BuildConsole() {
 // ---------------------------------------------------------------------------
 // Pipeline steps — a genuine sequence, so numbering is earned here.
 // ---------------------------------------------------------------------------
-
-
 
 // ---------------------------------------------------------------------------
 // Feature cards
@@ -271,19 +254,39 @@ export default function HomePage() {
         <div className="absolute -left-20 bottom-1/4 h-[300px] w-[300px] rounded-full bg-signal opacity-[0.06] blur-[100px]" />
 
         {/* Stars */}
-        <svg className="absolute left-[12%] top-[18%] h-5 w-5 text-accent/50 animate-[pulse_3s_ease-in-out_infinite]" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          className="absolute left-[12%] top-[18%] h-5 w-5 text-accent/50 animate-[pulse_3s_ease-in-out_infinite]"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
         </svg>
-        <svg className="absolute right-[20%] top-[12%] h-3 w-3 text-success/50 animate-[pulse_4s_ease-in-out_infinite_1s]" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          className="absolute right-[20%] top-[12%] h-3 w-3 text-success/50 animate-[pulse_4s_ease-in-out_infinite_1s]"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
         </svg>
-        <svg className="absolute left-[8%] bottom-[28%] h-4 w-4 text-signal/45 animate-[pulse_3.5s_ease-in-out_infinite_0.5s]" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          className="absolute left-[8%] bottom-[28%] h-4 w-4 text-signal/45 animate-[pulse_3.5s_ease-in-out_infinite_0.5s]"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
         </svg>
-        <svg className="absolute right-[8%] bottom-[18%] h-3.5 w-3.5 text-accent/40 animate-[pulse_4.5s_ease-in-out_infinite_2s]" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          className="absolute right-[8%] bottom-[18%] h-3.5 w-3.5 text-accent/40 animate-[pulse_4.5s_ease-in-out_infinite_2s]"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
         </svg>
-        <svg className="absolute left-[48%] top-[6%] h-2.5 w-2.5 text-white/30 animate-[pulse_3s_ease-in-out_infinite_1.5s]" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          className="absolute left-[48%] top-[6%] h-2.5 w-2.5 text-white/30 animate-[pulse_3s_ease-in-out_infinite_1.5s]"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z" />
         </svg>
 
@@ -294,7 +297,13 @@ export default function HomePage() {
         <span className="absolute right-[35%] bottom-[12%] h-2 w-2 rounded-full bg-signal/35 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
 
         {/* Decorative rings — right side */}
-        <svg className="absolute -right-12 top-1/3 h-80 w-80 -translate-y-1/2 text-accent/[0.06]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.4">
+        <svg
+          className="absolute -right-12 top-1/3 h-80 w-80 -translate-y-1/2 text-accent/[0.06]"
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.4"
+        >
           <circle cx="50" cy="50" r="42" />
           <circle cx="50" cy="50" r="32" />
           <circle cx="50" cy="50" r="22" />

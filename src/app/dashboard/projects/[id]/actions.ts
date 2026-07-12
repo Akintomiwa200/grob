@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { simulateBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build-simulator";
+import { deployBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build";
 
 export async function deployProject(projectId: string) {
   const session = await auth();
@@ -43,9 +43,9 @@ export async function deployProject(projectId: string) {
 
   revalidatePath(`/dashboard/projects/${projectId}`);
 
-  const entries: import("@/lib/build-simulator").LogEntry[] = [];
+  const entries: import("@/lib/build").LogEntry[] = [];
 
-  const url = await simulateBuild(
+  const url = await deployBuild(
     {
       name: project.name,
       gitUrl: project.gitUrl,

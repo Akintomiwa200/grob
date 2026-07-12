@@ -21,6 +21,7 @@ model User {
   apiTokens     ApiToken[]
   tickets       SupportTicket[]
   ticketReplies TicketReply[] @relation("TicketReplyAuthor")
+  buckets       StorageBucket[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { auth } from "@/lib/auth";
-import { Send, Paperclip, Bot, User } from "lucide-react";
+import Link from "next/link";
+import { Send, Bot, User } from "lucide-react";
 
 interface Message {
   id: string;
@@ -45,13 +45,13 @@ export default function LiveChatPage() {
 
   function getResponse(text: string): string {
     const lower = text.toLowerCase();
-    if (lower.includes("deploy")) return BOT_RESPONSES.deploy[0];
+    if (lower.includes("deploy")) return BOT_RESPONSES.deploy;
     if (lower.includes("build") || lower.includes("fail") || lower.includes("error"))
-      return BOT_RESPONSES.build[0];
+      return BOT_RESPONSES.build;
     if (lower.includes("domain") || lower.includes("dns"))
-      return BOT_RESPONSES.domain[0];
+      return BOT_RESPONSES.domain;
     if (lower.includes("env") || lower.includes("variable"))
-      return BOT_RESPONSES.env[0];
+      return BOT_RESPONSES.env;
     return "Thanks for your message! For more complex issues, I'd recommend opening a support ticket so our team can look into it in detail. You can do that from the Support dashboard.";
   }
 
@@ -164,9 +164,9 @@ export default function LiveChatPage() {
         </form>
         <p className="text-xs text-muted mt-2 text-center">
           Live chat is available 9am–6pm EST. For urgent issues outside business hours, please{" "}
-          <a href="/dashboard/support/tickets/new" className="text-accent hover:underline">
+          <Link href="/dashboard/support/tickets/new" className="text-accent hover:underline">
             open a ticket
-          </a>
+          </Link>
           .
         </p>
       </div>

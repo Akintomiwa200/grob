@@ -39,6 +39,7 @@ import Link from "next/link";
 import { DeploymentTabs } from "./deployment-tabs";
 import { VisitButton } from "./visit-button";
 import { DeploymentLogs } from "./logs";
+import { TriggerBuild } from "./trigger-build";
 import { rollbackToDeployment } from "./actions";
 
 const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
@@ -91,6 +92,7 @@ export default async function DeploymentDetailPage(props: {
 
   return (
     <div>
+      <TriggerBuild deploymentId={deploymentId} />
       <div className="mb-6">
         <Link
           href={`/dashboard/projects/${id}`}
