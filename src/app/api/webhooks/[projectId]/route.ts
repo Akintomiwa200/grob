@@ -68,7 +68,13 @@ export async function POST(
       framework: project.framework,
     },
     deployment.id,
-    (entry) => entries.push(entry),
+    (entry) => {
+      entries.push(entry);
+      prisma.deployment.update({
+        where: { id: deployment.id },
+        data: { logs: logEntriesToString(entries) },
+      }).catch(() => {});
+    },
     envVars,
   );
 

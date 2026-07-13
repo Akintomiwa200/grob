@@ -220,6 +220,7 @@ function writeServerMarker(
 export async function deployBuild(
   project: {
     name: string;
+    slug?: string;
     gitUrl: string;
     installCommand: string;
     buildCommand: string;
@@ -387,7 +388,8 @@ export async function deployBuild(
       writeDeploymentHtml(deploymentId, project.name, project.framework, t());
     }
 
-    const url = `localhost:3000/preview/${deploymentId}`;
+    const slug = project.slug || project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const url = `${slug}.localhost:3000`;
 
     ok(`Deployment complete!`);
     sys(`URL: http://${url}`);

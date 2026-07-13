@@ -37,27 +37,10 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { DeploymentTabs } from "./deployment-tabs";
-import { VisitButton } from "./visit-button";
+import { DeploymentStatus } from "./deployment-status";
 import { DeploymentLogs } from "./logs";
-import { TriggerBuild } from "./trigger-build";
+import { DeployMenu } from "./trigger-build";
 import { rollbackToDeployment } from "./actions";
-
-const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
-  pending: { dot: "bg-[#F5A623]", text: "text-[#F5A623]" },
-  building: { dot: "bg-[#0070F3]", text: "text-[#0070F3]" },
-  deploying: { dot: "bg-[#0070F3]", text: "text-[#0070F3]" },
-  success: { dot: "bg-[#3DDC97]", text: "text-[#3DDC97]" },
-  failed: { dot: "bg-[#E5484D]", text: "text-[#E5484D]" },
-};
-
-function formatDuration(ms: number | null | undefined) {
-  if (!ms || ms < 0) return "—";
-  const totalSeconds = Math.round(ms / 1000);
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
-}
 
 export default async function DeploymentDetailPage(props: {
   params: Promise<{ id: string; deploymentId: string }>;
@@ -77,14 +60,9 @@ export default async function DeploymentDetailPage(props: {
   });
   if (!deployment) notFound();
 
-  const status = STATUS_STYLES[deployment.status] ?? {
-    dot: "bg-gray-400",
-    text: "text-gray-400",
-  };
-
-  const durationMs =
-    new Date(deployment.updatedAt).getTime() -
-    new Date(deployment.createdAt).getTime();
+  const deploymentCount = await prisma.deployment.count({
+    where: { projectId: id },
+  });
 
   const domains = [deployment.url, deployment.alias].filter(
     (d): d is string => Boolean(d),
@@ -92,14 +70,19 @@ export default async function DeploymentDetailPage(props: {
 
   return (
     <div>
-      <TriggerBuild deploymentId={deploymentId} />
-      <div className="mb-6">
+      <div className="mb-6 flex items-start justify-between">
         <Link
           href={`/dashboard/projects/${id}`}
           className="mb-1 block text-sm text-muted hover:text-text"
         >
           &larr; {project.name}
         </Link>
+        <DeployMenu
+          projectId={id}
+          deploymentId={deploymentId}
+          hasPreviousDeployment={deploymentCount > 1}
+          initialStatus={deployment.status}
+        />
       </div>
 
       <DeploymentTabs projectId={id} deploymentId={deploymentId} />
@@ -115,75 +98,15 @@ export default async function DeploymentDetailPage(props: {
           </span>
         </div>
 
-        {/* Meta grid */}
+        {/* Live status + meta grid */}
         <div className="flex-1">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted">
-                Status
-              </p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-sm">
-                <span className={`h-2 w-2 rounded-full ${status.dot}`} />
-                <span className={`capitalize ${status.text}`}>
-                  {deployment.status}
-                </span>
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted">
-                Smart CDN
-              </p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-text">
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  className="h-4 w-4 text-[#0070F3]"
-                >
-                  <circle cx="10" cy="10" r="9" fill="currentColor" />
-                  <path
-                    d="M6 10.5l2.5 2.5L14 7.5"
-                    stroke="white"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Enabled
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted">
-                Deployment Duration
-              </p>
-              <p className="mt-1.5 text-sm text-text">
-                {formatDuration(durationMs)}
-              </p>
-            </div>
-            <div className="col-span-2 flex items-start sm:col-span-1 sm:justify-end lg:col-span-1">
-              <VisitButton primaryUrl={deployment.url} domains={domains} />
-            </div>
-          </div>
-
-          {domains.length > 0 && (
-            <div className="mt-6">
-              <p className="text-xs uppercase tracking-wide text-muted">
-                Domains
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                  {domains.map((d) => (
-                    <a
-                      key={d}
-                      href={(d.includes("localhost") || d.includes("127.0.0.1")) ? `http://${d}` : `https://${d}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-text hover:text-accent hover:underline"
-                    >
-                      {d}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          <DeploymentStatus
+            deploymentId={deploymentId}
+            initialStatus={deployment.status}
+            initialUrl={deployment.url}
+            initialDomains={domains}
+            initialCreatedAt={deployment.createdAt.toISOString()}
+          />
         </div>
       </div>
 

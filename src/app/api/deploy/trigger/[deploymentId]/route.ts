@@ -2,6 +2,73 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deployBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build";
 
+async function startBuild(deploymentId: string, project: {
+  name: string;
+  slug: string;
+  gitUrl: string | null;
+  installCommand: string | null;
+  buildCommand: string | null;
+  outputDir: string | null;
+  framework: string;
+  envVars: { key: string; value: string; buildTime: boolean }[];
+}) {
+  const buildTimeVars: Record<string, string> = {};
+  const runtimeVars: Record<string, string> = {};
+  for (const ev of project.envVars) {
+    if (ev.buildTime) {
+      buildTimeVars[ev.key] = ev.value;
+    } else {
+      runtimeVars[ev.key] = ev.value;
+    }
+  }
+  const envVars: BuildEnvVars = { buildTime: buildTimeVars, runtime: runtimeVars };
+
+  (async () => {
+    try {
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { status: "building" },
+      }).catch(() => {});
+
+      const entries: import("@/lib/build").LogEntry[] = [];
+      const url = await deployBuild(
+        {
+          name: project.name,
+          slug: project.slug,
+          gitUrl: project.gitUrl || "",
+          installCommand: project.installCommand || "",
+          buildCommand: project.buildCommand || "",
+          outputDir: project.outputDir || "",
+          framework: project.framework,
+        },
+        deploymentId,
+        (entry) => {
+          entries.push(entry);
+          prisma.deployment.update({
+            where: { id: deploymentId },
+            data: { logs: logEntriesToString(entries) },
+          }).catch(() => {});
+        },
+        envVars,
+      );
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: {
+          status: url ? "success" : "failed",
+          logs: logEntriesToString(entries),
+          url: url || "",
+        },
+      });
+    } catch (error) {
+      console.error("Build failed:", error);
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { status: "failed" },
+      }).catch(() => {});
+    }
+  })();
+}
+
 export async function POST(
   req: Request,
   props: { params: Promise<{ deploymentId: string }> }
@@ -13,6 +80,10 @@ export async function POST(
 
   const { deploymentId } = await props.params;
 
+  let body: { action?: string } = {};
+  try { body = await req.json(); } catch {}
+  const action = body.action || "redeploy";
+
   const deployment = await prisma.deployment.findFirst({
     where: { id: deploymentId },
     include: { project: { include: { envVars: true } } },
@@ -22,70 +93,35 @@ export async function POST(
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (deployment.status !== "pending" && deployment.status !== "building") {
-    return Response.json({ ok: true, status: deployment.status });
-  }
-
   const project = deployment.project;
 
-  // Separate build-time and runtime env vars
-  const buildTimeVars: Record<string, string> = {};
-  const runtimeVars: Record<string, string> = {};
-  for (const ev of project.envVars) {
-    if (ev.buildTime) {
-      buildTimeVars[ev.key] = ev.value;
-    } else {
-      runtimeVars[ev.key] = ev.value;
-    }
+  // For the original trigger (pending/building status), just start the existing deployment
+  if ((action === "redeploy" || action === "deploy-latest") &&
+      (deployment.status === "pending" || deployment.status === "building")) {
+    await startBuild(deploymentId, project);
+    return Response.json({ ok: true, deploymentId });
   }
 
-  const envVars: BuildEnvVars = {
-    buildTime: buildTimeVars,
-    runtime: runtimeVars,
-  };
+  // For any new deployment action, create a fresh deployment record
+  const newDeployment = await prisma.deployment.create({
+    data: {
+      projectId: project.id,
+      status: "building",
+      branch: deployment.branch,
+      commitSha: action === "deploy-latest"
+        ? crypto.randomUUID().slice(0, 40)
+        : deployment.commitSha,
+      commitMsg: action === "redeploy"
+        ? `Redeploy of ${deployment.commitSha.slice(0, 7)}`
+        : action === "deploy-latest"
+          ? "Deploy from latest commit"
+          : action === "redeploy-clean"
+            ? `Redeploy clean of ${deployment.commitSha.slice(0, 7)}`
+            : "Promote to production",
+    },
+  });
 
-  // Run build in background — don't await, let the SSE stream pick up logs
-  (async () => {
-    try {
-      const entries: import("@/lib/build").LogEntry[] = [];
+  await startBuild(newDeployment.id, project);
 
-      const url = await deployBuild(
-        {
-          name: project.name,
-          gitUrl: project.gitUrl,
-          installCommand: project.installCommand,
-          buildCommand: project.buildCommand,
-          outputDir: project.outputDir,
-          framework: project.framework,
-        },
-        deployment.id,
-        (entry) => {
-          entries.push(entry);
-          // Write logs incrementally so SSE stream can pick them up
-          prisma.deployment.update({
-            where: { id: deployment.id },
-            data: { logs: logEntriesToString(entries) },
-          }).catch(() => {});
-        },
-        envVars,
-      );
-
-      await prisma.deployment.update({
-        where: { id: deployment.id },
-        data: {
-          status: url ? "success" : "failed",
-          logs: logEntriesToString(entries),
-          url: url || "",
-        },
-      });
-    } catch (error) {
-      console.error("Build failed:", error);
-      await prisma.deployment.update({
-        where: { id: deployment.id },
-        data: { status: "failed" },
-      }).catch(() => {});
-    }
-  })();
-
-  return Response.json({ ok: true, deploymentId: deployment.id });
+  return Response.json({ ok: true, deploymentId: newDeployment.id });
 }

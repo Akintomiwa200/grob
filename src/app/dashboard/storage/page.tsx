@@ -1,67 +1,33 @@
-"use client";
-
-import { useState } from "react";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   Database,
   Upload,
   Search,
   File,
   Folder,
-  Image,
-  FileText,
-  Film,
-  Trash2,
-  Download,
-  MoreHorizontal,
-  Plus,
   HardDrive,
-  FileCode,
-  Archive,
+  Plus,
+  Globe,
+  Lock,
+  Trash2,
 } from "lucide-react";
+import type { Metadata } from "next";
 
-type StorageFile = {
-  id: string;
-  name: string;
-  type: "file" | "folder" | "image" | "document" | "video" | "code" | "archive";
-  size: string;
-  modified: string;
-};
+export const metadata: Metadata = { title: "Storage | Grob" };
 
-export default function StoragePage() {
-  const [search, setSearch] = useState("");
-  const [view, setView] = useState<"grid" | "list">("list");
+export default async function StoragePage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
 
-  const buckets = [
-    { name: "uploads", files: 234, size: "1.2 GB", public: true },
-    { name: "assets", files: 1892, size: "4.8 GB", public: true },
-    { name: "backups", files: 12, size: "890 MB", public: false },
-    { name: "temp", files: 8, size: "45 MB", public: false },
-  ];
+  const buckets = await prisma.storageBucket.findMany({
+    where: { userId: session.user.id },
+    orderBy: { updatedAt: "desc" },
+  });
 
-  const files: StorageFile[] = [
-    { id: "1", name: "hero-banner.webp", type: "image", size: "245 KB", modified: "2 hours ago" },
-    { id: "2", name: "documents", type: "folder", size: "—", modified: "1 day ago" },
-    { id: "3", name: "api-spec.pdf", type: "document", size: "1.2 MB", modified: "3 days ago" },
-    { id: "4", name: "promo-video.mp4", type: "video", size: "18.4 MB", modified: "5 days ago" },
-    { id: "5", name: "config.json", type: "code", size: "4.2 KB", modified: "1 week ago" },
-    { id: "6", name: "release-v2.zip", type: "archive", size: "34.1 MB", modified: "2 weeks ago" },
-    { id: "7", name: "avatar-default.png", type: "image", size: "12 KB", modified: "2 weeks ago" },
-    { id: "8", name: "README.md", type: "document", size: "3.1 KB", modified: "3 weeks ago" },
-  ];
-
-  const typeIcons = {
-    image: { icon: Image, color: "text-purple-500", bg: "bg-purple-500/10" },
-    folder: { icon: Folder, color: "text-blue-500", bg: "bg-blue-500/10" },
-    document: { icon: FileText, color: "text-amber-500", bg: "bg-amber-500/10" },
-    video: { icon: Film, color: "text-red-500", bg: "bg-red-500/10" },
-    code: { icon: FileCode, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    archive: { icon: Archive, color: "text-orange-500", bg: "bg-orange-500/10" },
-    file: { icon: File, color: "text-muted", bg: "bg-white/5" },
-  };
-
-  const filteredFiles = files.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const totalBuckets = buckets.length;
 
   return (
     <div className="mx-auto max-w-6xl pb-12">
@@ -73,33 +39,35 @@ export default function StoragePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-text px-4 py-2.5 text-sm font-semibold text-bg transition-transform hover:scale-[1.02] active:scale-[0.98]">
-            <Upload className="h-4 w-4" /> Upload
-          </button>
-          <button className="flex items-center gap-2 rounded-xl border border-border bg-surface/30 px-4 py-2.5 text-sm font-medium text-text hover:bg-white/[0.05] transition-colors">
+          <Link
+            href="/dashboard/storage/new"
+            className="flex items-center gap-2 rounded-xl bg-text px-4 py-2.5 text-sm font-semibold text-bg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
             <Plus className="h-4 w-4" /> New Bucket
-          </button>
+          </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-border bg-surface/20 p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
               <Database className="h-5 w-5 text-accent" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-2xl font-bold text-text">{buckets.length}</p>
+          <p className="text-2xl font-bold text-text">{totalBuckets}</p>
           <p className="text-xs text-muted mt-1">Buckets</p>
         </div>
         <div className="rounded-xl border border-border bg-surface/20 p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-              <File className="h-5 w-5 text-emerald-500" strokeWidth={1.5} />
+              <Folder className="h-5 w-5 text-emerald-500" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-2xl font-bold text-text">2,146</p>
-          <p className="text-xs text-muted mt-1">Total Files</p>
+          <p className="text-2xl font-bold text-text">
+            {buckets.filter((b) => b.visibility === "public").length}
+          </p>
+          <p className="text-xs text-muted mt-1">Public Buckets</p>
         </div>
         <div className="rounded-xl border border-border bg-surface/20 p-5">
           <div className="flex items-center gap-3 mb-3">
@@ -107,152 +75,95 @@ export default function StoragePage() {
               <HardDrive className="h-5 w-5 text-blue-500" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-2xl font-bold text-text">6.9 GB</p>
-          <p className="text-xs text-muted mt-1">Storage Used</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface/20 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-              <Download className="h-5 w-5 text-amber-500" strokeWidth={1.5} />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-text">42.8K</p>
-          <p className="text-xs text-muted mt-1">Downloads (30d)</p>
+          <p className="text-2xl font-bold text-text">
+            {buckets.filter((b) => b.visibility === "private").length}
+          </p>
+          <p className="text-xs text-muted mt-1">Private Buckets</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-1">
-          <div className="rounded-xl border border-border bg-surface/20 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-surface/30">
-              <h3 className="text-sm font-semibold text-text">Buckets</h3>
-            </div>
-            <div className="divide-y divide-border">
+      {buckets.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface/20 p-12 text-center">
+          <Database className="h-10 w-10 text-muted mx-auto mb-4 opacity-40" />
+          <h3 className="text-lg font-semibold text-text mb-1">No buckets yet</h3>
+          <p className="text-sm text-muted mb-4">
+            Create a storage bucket to start uploading files and assets.
+          </p>
+          <Link
+            href="/dashboard/storage/new"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition"
+          >
+            <Plus className="h-4 w-4" /> Create your first bucket
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-surface/20 overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-surface/30 flex items-center justify-between">
+            <h2 className="font-semibold text-text">Buckets</h2>
+            <span className="text-xs text-muted">{totalBuckets} total</span>
+          </div>
+          <table className="w-full text-left text-sm">
+            <thead className="text-muted">
+              <tr>
+                <th className="px-6 py-3 font-medium">Name</th>
+                <th className="px-6 py-3 font-medium hidden sm:table-cell">Visibility</th>
+                <th className="px-6 py-3 font-medium hidden md:table-cell">Region</th>
+                <th className="px-6 py-3 font-medium hidden md:table-cell">Created</th>
+                <th className="px-6 py-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
               {buckets.map((bucket) => (
-                <button
-                  key={bucket.name}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <Folder className="h-4 w-4 text-blue-500" />
-                    <div>
-                      <span className="text-sm font-medium text-text">{bucket.name}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted">{bucket.files} files</span>
-                        <span className="text-[10px] text-muted">·</span>
-                        <span className="text-[10px] text-muted">{bucket.size}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {bucket.public && (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded font-medium">
-                      Public
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-3">
-          <div className="rounded-xl border border-border bg-surface/20 overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-surface/30 flex items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search files..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-surface/30 pl-10 pr-4 py-1.5 text-sm text-text placeholder-muted focus:border-accent focus:outline-none"
-                />
-              </div>
-              <div className="flex items-center gap-1 border border-border rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setView("list")}
-                  className={`px-2 py-1 text-xs ${view === "list" ? "bg-white/10" : "hover:bg-white/5"}`}
-                >
-                  ☰
-                </button>
-                <button
-                  onClick={() => setView("grid")}
-                  className={`px-2 py-1 text-xs ${view === "grid" ? "bg-white/10" : "hover:bg-white/5"}`}
-                >
-                  ⊞
-                </button>
-              </div>
-            </div>
-            {view === "list" ? (
-              <table className="w-full text-left text-sm">
-                <thead className="text-muted">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Name</th>
-                    <th className="px-6 py-3 font-medium hidden sm:table-cell">Size</th>
-                    <th className="px-6 py-3 font-medium hidden md:table-cell">Modified</th>
-                    <th className="px-6 py-3 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filteredFiles.map((file) => {
-                    const typeInfo = typeIcons[file.type];
-                    const TypeIcon = typeInfo.icon;
-                    return (
-                      <tr key={file.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${typeInfo.bg}`}>
-                              <TypeIcon className={`h-4 w-4 ${typeInfo.color}`} />
-                            </div>
-                            <span className="font-medium text-text">{file.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 hidden sm:table-cell text-muted text-xs">{file.size}</td>
-                        <td className="px-6 py-3 hidden md:table-cell text-muted text-xs">{file.modified}</td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 rounded-lg text-muted hover:text-text hover:bg-white/5 transition-colors">
-                              <Download className="h-3.5 w-3.5" />
-                            </button>
-                            <button className="p-1.5 rounded-lg text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
-                {filteredFiles.map((file) => {
-                  const typeInfo = typeIcons[file.type];
-                  const TypeIcon = typeInfo.icon;
-                  return (
-                    <div
-                      key={file.id}
-                      className="rounded-lg border border-border p-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                <tr key={bucket.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-6 py-3">
+                    <Link
+                      href={`/dashboard/storage/${bucket.id}`}
+                      className="flex items-center gap-3 hover:text-accent transition-colors"
                     >
-                      <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${typeInfo.bg} mb-3`}>
-                        <TypeIcon className={`h-6 w-6 ${typeInfo.color}`} />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                        <Folder className="h-4 w-4 text-blue-500" />
                       </div>
-                      <p className="text-sm font-medium text-text truncate">{file.name}</p>
-                      <p className="text-xs text-muted mt-0.5">{file.size}</p>
+                      <span className="font-medium text-text font-mono">{bucket.name}</span>
+                    </Link>
+                  </td>
+                  <td className="px-6 py-3 hidden sm:table-cell">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                        bucket.visibility === "public"
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : "bg-amber-500/10 text-amber-500"
+                      }`}
+                    >
+                      {bucket.visibility === "public" ? (
+                        <Globe className="h-3 w-3" />
+                      ) : (
+                        <Lock className="h-3 w-3" />
+                      )}
+                      {bucket.visibility}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 hidden md:table-cell text-muted text-xs">
+                    {bucket.region}
+                  </td>
+                  <td className="px-6 py-3 hidden md:table-cell text-muted text-xs">
+                    {new Date(bucket.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/dashboard/storage/${bucket.id}`}
+                        className="p-1.5 rounded-lg text-muted hover:text-text hover:bg-white/5 transition-colors"
+                      >
+                        <File className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-            {filteredFiles.length === 0 && (
-              <div className="px-6 py-16 text-center">
-                <Database className="h-6 w-6 text-muted mx-auto mb-3" />
-                <p className="text-sm text-muted">No files found.</p>
-              </div>
-            )}
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }

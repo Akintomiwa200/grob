@@ -69,7 +69,7 @@ const LOG_LINES = [
   { text: "✓ Build completed (11.8s)", kind: "ok" },
   { text: "→ Uploading to edge network…", kind: "info" },
   { text: "✓ Deployed to production", kind: "ok" },
-  { text: "● grob-app.vercel.build is live", kind: "live" },
+  { text: "● grob-app.grob.app is live", kind: "live" },
 ] as const;
 
 function BuildConsole() {

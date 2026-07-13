@@ -48,6 +48,7 @@ export async function deployProject(projectId: string) {
   const url = await deployBuild(
     {
       name: project.name,
+      slug: project.slug,
       gitUrl: project.gitUrl,
       installCommand: project.installCommand,
       buildCommand: project.buildCommand,
@@ -55,7 +56,13 @@ export async function deployProject(projectId: string) {
       framework: project.framework,
     },
     deployment.id,
-    (entry) => entries.push(entry),
+    (entry) => {
+      entries.push(entry);
+      prisma.deployment.update({
+        where: { id: deployment.id },
+        data: { logs: logEntriesToString(entries) },
+      }).catch(() => {});
+    },
     envVars,
   );
 

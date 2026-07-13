@@ -28,7 +28,9 @@ export default async function DomainsPage(props: {
   });
   if (!project) notFound();
 
-  const slug = project.name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const deploymentUrl = `http://${project.slug}.localhost:3000`;
+  const deploymentHost = `${project.slug}.localhost:3000`;
+  const prodUrl = `${project.slug}.grob.app`;
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -37,6 +39,41 @@ export default async function DomainsPage(props: {
         <p className="text-muted text-sm">
           Manage custom domains for <span className="text-text font-medium">{project.name}</span>
         </p>
+      </div>
+
+      {/* Primary deployment URL */}
+      <div className="bg-surface border border-accent/20 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Globe className="w-4 h-4 text-accent" />
+          <span className="text-xs font-medium text-accent uppercase tracking-wide">
+            Primary Domain
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-sm font-medium text-text">
+              {deploymentHost}
+            </span>
+            <a
+              href={deploymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted hover:text-accent transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs text-green-500 font-medium">Active</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs text-green-500 font-medium">SSL</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Add domain form */}
@@ -210,7 +247,7 @@ export default async function DomainsPage(props: {
                             </div>
                             <div>
                               <span className="text-muted">Value</span>{" "}
-                              <span className="text-accent">{slug}.grob.app</span>
+                              <span className="text-accent">{project.slug}.grob.app</span>
                             </div>
                           </div>
                         </div>

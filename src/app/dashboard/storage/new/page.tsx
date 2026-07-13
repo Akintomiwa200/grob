@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, Info } from "lucide-react";
+import { createBucket } from "../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Create Bucket | Storage | Grob" };
 
 export default async function NewBucketPage() {
   const session = await auth();
@@ -40,7 +44,7 @@ export default async function NewBucketPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface/20 p-6 mb-8">
-        <form className="space-y-5">
+        <form action={createBucket} className="space-y-5">
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-1.5 text-text">
               Bucket Name
@@ -112,10 +116,9 @@ export default async function NewBucketPage() {
             <select
               id="projectId"
               name="projectId"
-              required
               className="w-full rounded-lg border border-border bg-surface/30 px-3 py-2 text-sm text-text focus:border-accent focus:outline-none transition-colors"
             >
-              <option value="">Select a project</option>
+              <option value="">No project (standalone)</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -127,8 +130,7 @@ export default async function NewBucketPage() {
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
-              disabled={projects.length === 0}
-              className="inline-flex items-center px-4 py-2 text-sm font-semibold text-bg bg-text rounded-xl transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="inline-flex items-center px-4 py-2 text-sm font-semibold text-bg bg-text rounded-xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Create Bucket
             </button>

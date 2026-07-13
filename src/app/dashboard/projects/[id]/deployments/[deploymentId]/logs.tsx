@@ -127,7 +127,7 @@ export function DeploymentLogs({
   );
 
   const displayedText = useMemo(() => {
-    if (view === "build") return buildLogs || "Waiting for logs...";
+    if (view === "build") return buildLogs || "No build logs available.";
     if (filteredInvocations.length === 0) return "No runtime invocations recorded yet.";
     return filteredInvocations.map(invocationLine).join("\n");
   }, [view, buildLogs, filteredInvocations]);
@@ -208,7 +208,16 @@ export function DeploymentLogs({
       <div className="max-h-96 overflow-y-auto overflow-x-auto rounded-xl bg-bg border border-border p-4 font-mono text-xs leading-[1.7]">
         {view === "build" ? (
           buildLines.length === 0 ? (
-            <div className="text-muted">Waiting for logs...</div>
+            liveStatus === "building" ? (
+              <div className="flex items-center gap-2 text-muted">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#6E5BFF] border-t-transparent" />
+                <span>Building deployment...</span>
+              </div>
+            ) : liveStatus === "pending" ? (
+              <div className="text-muted">Not deployed yet. Click Deploy to start.</div>
+            ) : (
+              <div className="text-muted">No build logs available.</div>
+            )
           ) : (
             buildLines.map((line, i) => <LogLine key={i} line={line} />)
           )

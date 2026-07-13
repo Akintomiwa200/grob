@@ -37,12 +37,14 @@ import {
   PieChart,
   CircleHelp,
   ChevronsUpDown,
+  CheckCircle2,
   Search,
   MoreHorizontal,
   Bell,
   LogOut,
   Settings,
   User as UserIcon,
+  Plus,
 } from "lucide-react";
 
 type NavItem = {
@@ -113,12 +115,17 @@ type SidebarUser = {
 export default function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const switcherRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
+      }
+      if (switcherRef.current && !switcherRef.current.contains(event.target as Node)) {
+        setIsSwitcherOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -139,21 +146,51 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-[#212633] bg-[#0B0E14] text-[#E7E9EE]">
       {/* Workspace switcher */}
-      <button
-        type="button"
-        className="flex h-14 items-center gap-2 border-b border-[#212633] px-4 text-left hover:bg-white/[0.03]"
-      >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
-          {initial}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">
-          {user.name || "Account"}
-        </span>
-        <span className="rounded-full border border-[#212633] bg-[#12151D] px-2 py-0.5 text-[11px] font-medium text-[#8B92A4]">
-          {user.plan ?? "Hobby"}
-        </span>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
-      </button>
+      <div className="relative" ref={switcherRef}>
+        <button
+          type="button"
+          onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
+          className="flex h-14 w-full items-center gap-2 border-b border-[#212633] px-4 text-left hover:bg-white/[0.03]"
+        >
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
+            {initial}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {user.name || "Account"}
+          </span>
+          <span className="rounded-full border border-[#212633] bg-[#12151D] px-2 py-0.5 text-[11px] font-medium text-[#8B92A4]">
+            {user.plan ?? "Hobby"}
+          </span>
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
+        </button>
+
+        {isSwitcherOpen && (
+          <div className="absolute top-full left-0 right-0 z-50 border-b border-[#212633] bg-[#12151D] p-1 shadow-2xl">
+            <div className="px-3 py-2 mb-1">
+              <p className="text-[10px] uppercase tracking-wider text-[#8B92A4] font-medium">Account</p>
+            </div>
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/[0.05]">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
+                {initial}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-[#E7E9EE] truncate">{user.name || "Account"}</p>
+                <p className="text-xs text-[#8B92A4] truncate">{user.email}</p>
+              </div>
+              <CheckCircle2 className="h-4 w-4 text-[#6E5BFF] shrink-0" />
+            </div>
+            <div className="my-1 border-t border-[#212633]" />
+            <Link
+              href="/login"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
+              onClick={() => setIsSwitcherOpen(false)}
+            >
+              <Plus className="h-4 w-4" />
+              Add account
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* Search */}
       <div className="p-3">

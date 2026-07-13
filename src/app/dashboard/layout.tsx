@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 
@@ -11,6 +12,12 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   if (!session) redirect("/login");
+
+  const projects = await prisma.project.findMany({
+    where: { userId: session.user!.id },
+    select: { id: true, name: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="flex h-screen bg-bg">
@@ -39,6 +46,7 @@ export default async function DashboardLayout({
         <Navbar
           userName={session.user?.name}
           userImage={session.user?.image}
+          projects={projects}
         />
 
         <main className="flex-1 overflow-y-auto p-6 text-text">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { deployProject } from "./actions";
+import { DeployMenu } from "./deployments/[deploymentId]/trigger-build";
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -48,7 +49,16 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-5">Deployments</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-semibold">Deployments</h2>
+          {project.deployments.length > 0 && (
+            <DeployMenu
+              projectId={project.id}
+              deploymentId={project.deployments[0].id}
+              hasPreviousDeployment={project.deployments.length > 1}
+            />
+          )}
+        </div>
         {project.deployments.length === 0 ? (
           <div className="text-center py-16 border border-border bg-surface/30 rounded-xl shadow-sm">
             <h3 className="text-lg font-medium text-text mb-1">No deployments yet</h3>

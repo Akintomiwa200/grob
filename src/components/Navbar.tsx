@@ -1,126 +1,131 @@
 "use client";
 
-/**
- * Navbar — top breadcrumb bar (org → project → deployment).
- *
- * The dashboard layout is a single top-level layout, so it doesn't get
- * dynamic [id]/[deploymentId] route params the way a page.tsx would. This
- * component reads them out of the pathname instead and fetches the real
- * names/status from /api/breadcrumb, so the bar updates correctly as you
- * navigate between /dashboard, a project, and a specific deployment —
- * no hardcoded "new-homepage" anywhere.
- */
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ChevronRight, ChevronsUpDown, MoreHorizontal } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
+import {
+  ChevronRight,
+  ChevronsUpDown,
+  MoreHorizontal,
+  CheckCircle2,
+  Folder,
+} from "lucide-react";
 
-type Breadcrumb = {
-  orgName: string;
-  orgImage?: string | null;
-  projectName?: string;
-  deploymentShortId?: string;
-  visibility?: string;
-};
+type Project = { id: string; name: string };
 
 const RIGHT_LINKS = [
-  { label: "Feedback", href: "https://vercel.com/feedback" },
-  { label: "Blog", href: "https://vercel.com/blog" },
-  { label: "Support", href: "https://vercel.com/support" },
-  { label: "Docs", href: "https://vercel.com/docs" },
+  { label: "Feedback", href: "/dashboard/support" },
+  { label: "Blog", href: "/dashboard" },
+  { label: "Support", href: "/dashboard/support" },
+  { label: "Docs", href: "/dashboard/support" },
 ];
 
 export default function Navbar({
   userName,
   userImage,
+  projects,
 }: {
   userName?: string | null;
   userImage?: string | null;
+  projects: Project[];
 }) {
   const pathname = usePathname();
-  const [data, setData] = useState<Breadcrumb | null>(null);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (switcherRef.current && !switcherRef.current.contains(event.target as Node)) {
+        setSwitcherOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const segments = pathname.split("/").filter(Boolean);
-  // ["dashboard", "projects", ":id", "deployments", ":deploymentId", ...]
   const projectId = segments[1] === "projects" ? segments[2] : undefined;
   const deploymentId = segments[3] === "deployments" ? segments[4] : undefined;
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (projectId) params.set("projectId", projectId);
-    if (deploymentId) params.set("deploymentId", deploymentId);
-
-    let cancelled = false;
-    fetch(`/api/breadcrumb?${params.toString()}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setData(d);
-      })
-      .catch(() => {
-        if (!cancelled) setData(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, deploymentId]);
-
-  const orgName = data?.orgName ?? userName ?? "Account";
-  const displayInitial = (
-    data?.orgName
-      ? data.orgName.charAt(0)
-      : (userName || "Account").charAt(0)
-  ).toUpperCase();
-  const currentProject = projectId ? data?.projectName : null;
-  const breadcrumbLabel = currentProject || orgName;
-  const breadcrumbInitial = currentProject
-    ? currentProject.charAt(0).toUpperCase()
-    : displayInitial;
+  const currentProject = projects.find((p) => p.id === projectId);
+  const breadcrumbLabel = currentProject?.name || userName || "Projects";
+  const breadcrumbInitial = breadcrumbLabel.charAt(0).toUpperCase();
 
   return (
     <header className="hidden h-14 shrink-0 items-center justify-between bg-[#0B0E14] px-6 md:flex">
       <div className="flex min-w-0 items-center gap-2 text-sm">
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-white/[0.05]"
-        >
-          {data?.orgImage && !currentProject ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.orgImage} alt="" className="h-5 w-5 rounded-full" />
-          ) : (
+        {/* Project switcher */}
+        <div className="relative" ref={switcherRef}>
+          <button
+            type="button"
+            onClick={() => setSwitcherOpen(!switcherOpen)}
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-white/[0.05]"
+          >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#6E5BFF] text-[10px] font-bold text-white">
               {breadcrumbInitial}
             </span>
-          )}
-          <span className="font-medium text-[#E7E9EE]">{breadcrumbLabel}</span>
-          <ChevronsUpDown className="h-3 w-3 text-[#8B92A4]" />
-        </button>
+            <span className="font-medium text-[#E7E9EE]">{breadcrumbLabel}</span>
+            <ChevronsUpDown className="h-3 w-3 text-[#8B92A4]" />
+          </button>
 
-        {currentProject && data?.projectName && (
+          {switcherOpen && (
+            <div className="absolute top-full left-0 z-50 mt-1 w-64 rounded-xl border border-[#212633] bg-[#12151D] p-1 shadow-2xl">
+              <div className="px-3 py-2 mb-1">
+                <p className="text-[10px] uppercase tracking-wider text-[#8B92A4] font-medium">Projects</p>
+              </div>
+              {projects.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-[#8B92A4]">No projects yet</div>
+              ) : (
+                projects.map((p) => {
+                  const isActive = p.id === projectId;
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/dashboard/projects/${p.id}`}
+                      onClick={() => setSwitcherOpen(false)}
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        isActive
+                          ? "bg-white/[0.05] text-[#E7E9EE]"
+                          : "text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+                      }`}
+                    >
+                      <Folder className="h-4 w-4 shrink-0" />
+                      <span className="flex-1 truncate">{p.name}</span>
+                      {isActive && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#6E5BFF]" />}
+                    </Link>
+                  );
+                })
+              )}
+              <div className="my-1 border-t border-[#212633]" />
+              <Link
+                href="/dashboard/projects/new"
+                onClick={() => setSwitcherOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
+              >
+                + New Project
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {currentProject && (
           <>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
             <Link
-              href={`/dashboard/projects`}
-              className="truncate rounded-md px-2 py-1.5 text-muted hover:bg-white/[0.05] hover:text-text"
+              href="/dashboard/projects"
+              className="truncate rounded-md px-2 py-1.5 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
             >
               All Projects
             </Link>
           </>
         )}
 
-        {deploymentId && data?.deploymentShortId && (
+        {deploymentId && (
           <>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
-            <span className="flex items-center gap-2 rounded-md px-2 py-1.5">
-              <span className="flex items-center gap-1.5 font-mono text-xs text-[#8B92A4]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#3DDC97]" />
-                {data.deploymentShortId}
-              </span>
-              {data.visibility && (
-                <span className="rounded-full bg-[#212633] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8B92A4]">
-                  {data.visibility}
-                </span>
-              )}
+            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-xs text-[#8B92A4]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#3DDC97]" />
+              {deploymentId.slice(0, 8)}
             </span>
           </>
         )}

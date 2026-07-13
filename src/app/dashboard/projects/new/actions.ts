@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { generateUniqueSlug } from "@/lib/slug";
 
 export async function createProject(formData: FormData) {
   const session = await auth();
@@ -12,9 +13,18 @@ export async function createProject(formData: FormData) {
   const defaultBranch = (formData.get("defaultBranch") as string) || "main";
   const createWebhook = formData.has("createWebhook");
 
+  const projectName = (formData.get("name") as string) || "my-project";
+
+  // Generate unique slug
+  const existingSlugs = (
+    await prisma.project.findMany({ select: { slug: true } })
+  ).map((p) => p.slug);
+  const slug = generateUniqueSlug(projectName, existingSlugs);
+
   const project = await prisma.project.create({
     data: {
-      name: formData.get("name") as string,
+      name: projectName,
+      slug,
       description: (formData.get("description") as string) || "",
       gitUrl: (formData.get("gitUrl") as string) || "",
       framework: (formData.get("framework") as string) || "",

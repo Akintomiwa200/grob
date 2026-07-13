@@ -22,8 +22,10 @@ export function VisitButton({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const toUrl = (d: string) =>
-    d.includes("localhost") || d.includes("127.0.0.1") ? `http://${d}` : `https://${d}`;
+  const toUrl = (d: string) => {
+    if (d.includes("localhost") || d.includes("127.0.0.1")) return `http://${d}`;
+    return `https://${d}`;
+  };
 
   if (!primaryUrl) {
     return (

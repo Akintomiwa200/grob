@@ -255,8 +255,7 @@ export default async function DashboardPage() {
                           {project.name}
                         </h3>
                         <p className="text-[10px] text-muted truncate">
-                          {project.name.toLowerCase().replace(/\s/g, "-")}
-                          .vercel.app
+                          {project.slug}.localhost:3000
                         </p>
                       </div>
                     </div>
