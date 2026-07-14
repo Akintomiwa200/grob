@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import ProjectCardMenu from "@/components/ProjectCardMenu";
+import { LiveRefresh } from "./[id]/LiveRefresh";
 
 export default async function ProjectsPage() {
   const session = await auth();
@@ -16,13 +17,14 @@ export default async function ProjectsPage() {
       deployments: {
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { status: true, createdAt: true, commitMsg: true },
+        select: { status: true, createdAt: true, commitMsg: true, branch: true },
       },
     },
   });
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto text-text">
+      <LiveRefresh active={projects.some((p) => p.deployments.some((d) => d.status === "building"))} />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
@@ -125,7 +127,7 @@ export default async function ProjectsPage() {
                                 : "bg-zinc-500"
                         }`}
                       />
-                      <span>{latest ? "main" : "—"}</span>
+                      <span>{latest ? (latest.branch || "main") : "—"}</span>
                     </span>
                     <span>
                       {latest
