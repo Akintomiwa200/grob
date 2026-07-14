@@ -33,7 +33,16 @@ export async function saveEnvVars(projectId: string, formData: FormData) {
   }
 
   revalidatePath("/dashboard/env");
+  revalidatePath(`/dashboard/projects/${projectId}/env`);
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
+
+  const latest = await prisma.deployment.findFirst({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+
+  return { deploymentId: latest?.id ?? null };
 }
 
 export async function createWebhook(projectId: string) {

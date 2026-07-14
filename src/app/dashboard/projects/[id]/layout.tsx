@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { deployProject } from "./actions";
-import { ProjectTabs } from "./ProjectTabs";
 
 export default async function ProjectLayout(props: {
   children: React.ReactNode;
@@ -59,11 +58,8 @@ export default async function ProjectLayout(props: {
         </form>
       </div>
 
-      {/* Persistent Tabs */}
-      <ProjectTabs projectId={project.id} />
-
       {/* Active Tab Content */}
-      <div className="pt-2">{props.children}</div>
+      <div>{props.children}</div>
     </div>
   );
 }

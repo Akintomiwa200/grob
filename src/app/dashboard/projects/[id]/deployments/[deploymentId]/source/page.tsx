@@ -132,7 +132,7 @@ export default async function DeploymentSourcePage(props: {
             <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs text-muted">
               <span className="font-medium text-text">src/lib/api.ts</span>
             </div>
-            <pre className="overflow-x-auto p-4 text-xs leading-[1.8] font-mono">{`@@ -23,6 +23,10 @@ export async function fetchData(url: string) {
+            <pre className="overflow-x-auto p-4 text-xs leading-[1.8] font-mono scrollbar-hidden">{`@@ -23,6 +23,10 @@ export async function fetchData(url: string) {
    return response.json();
  }
 

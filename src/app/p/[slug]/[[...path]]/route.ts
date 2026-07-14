@@ -20,6 +20,7 @@ const MIME: Record<string, string> = {
   ".woff2": "font/woff2",
   ".ttf": "font/ttf",
   ".otf": "font/otf",
+  ".eot": "application/vnd.ms-fontobject",
   ".map": "application/json",
   ".txt": "text/plain; charset=utf-8",
   ".xml": "application/xml",
@@ -28,7 +29,15 @@ const MIME: Record<string, string> = {
   ".mp4": "video/mp4",
   ".webm": "video/webm",
   ".wasm": "application/wasm",
+  ".csv": "text/csv; charset=utf-8",
+  ".pdf": "application/pdf",
+  ".zip": "application/zip",
 };
+
+const TEXT_EXTS = new Set([
+  ".html", ".css", ".js", ".mjs", ".json", ".svg", ".txt", ".xml",
+  ".ts", ".tsx", ".jsx", ".md", ".yaml", ".yml", ".toml", ".map",
+]);
 
 const runningServers = new Map<string, ReturnType<typeof execa>>();
 
@@ -199,26 +208,107 @@ async function proxyRequest(
 }
 
 function rewriteHtmlPaths(html: string, basePath: string): string {
-  const prefix = basePath.slice(1);
-  let result = html.replace(
-    /((?:href|src|content)=["'])\/([^"']*)/g,
+  const prefix = basePath.slice(1) + "/";
+
+  let result = html;
+
+  result = result.replace(
+    /((?:href|src|content|poster|action|cite|data|formaction|icon|manifest|archive)=["'])\/((?!\/)[^"']*)/g,
     (match, attr: string, path: string) => {
-      if (path.startsWith(prefix + "/")) return match;
+      if (path.startsWith(prefix)) return match;
       return `${attr}${basePath}/${path}`;
     },
   );
+
+  result = result.replace(
+    /(srcset=["'])((?!data:)[^"']*)/g,
+    (match, attr: string, value: string) => {
+      const rewritten = value.replace(
+        /(?:^|,\s*)(\/(?!data:)[^\s,]+)/g,
+        (m: string, url: string) => {
+          if (url.startsWith(basePath)) return m;
+          return m.replace(url, `${basePath}${url}`);
+        },
+      );
+      return `${attr}${rewritten}`;
+    },
+  );
+
   result = result.replace(
     /("(\/_next\/[^"]*?)")/g,
     (match, full, path) => `"${basePath}${path}"`,
   );
+
+  result = result.replace(
+    /('\/_next\/[^']*?')/g,
+    (match) => {
+      const path = match.slice(1, -1);
+      return `'${basePath}${path}'`;
+    },
+  );
+
   return result;
 }
 
-function resolveFilePath(deployDir: string, pathParts: string[]): string | null {
+function rewriteCssPaths(css: string, basePath: string): string {
+  const prefix = basePath.slice(1) + "/";
+
+  return css.replace(
+    /url\((["']?)\/(?!data:)([^"')]+)\1\)/g,
+    (match, quote: string, path: string) => {
+      if (path.startsWith(prefix)) return match;
+      return `url(${quote}${basePath}/${path}${quote})`;
+    },
+  );
+}
+
+function rewriteJsPaths(js: string, basePath: string): string {
+  const prefix = basePath.slice(1) + "/";
+
+  let result = js;
+
+  result = result.replace(
+    /((?:import|export)\s+.*?from\s+["'])\/((?!\/)[^"']+)/g,
+    (match, prefix_match: string, path: string) => {
+      if (path.startsWith(prefix)) return match;
+      return `${prefix_match}${basePath}/${path}`;
+    },
+  );
+
+  result = result.replace(
+    /(import\s*\(\s*["'])\/((?!\/)[^"']+)/g,
+    (match, prefix_match: string, path: string) => {
+      if (path.startsWith(prefix)) return match;
+      return `${prefix_match}${basePath}/${path}`;
+    },
+  );
+
+  result = result.replace(
+    /(["'])\/_next\/([^"']+)\1/g,
+    (match, quote: string, path: string) => {
+      return `${quote}${basePath}/_next/${path}${quote}`;
+    },
+  );
+
+  return result;
+}
+
+function rewriteSvgPaths(svg: string, basePath: string): string {
+  const prefix = basePath.slice(1) + "/";
+
+  return svg.replace(
+    /(xlink:href|href)=["']\/(?!data:)([^"']+)/g,
+    (match, attr: string, path: string) => {
+      if (path.startsWith(prefix)) return match;
+      return `${attr}="${basePath}/${path}"`;
+    },
+  );
+}
+
+function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean): { file: string | null; isIndexFallback: boolean } {
   let filePath: string;
 
   if (pathParts.length === 0) {
-    // For the root path, check Next.js server/app first
     let baseDir = deployDir;
     const nextAppDir = join(deployDir, "server", "app");
     if (existsSync(nextAppDir)) {
@@ -245,11 +335,14 @@ function resolveFilePath(deployDir: string, pathParts: string[]): string | null 
       } else if (items.includes("index.html")) {
         filePath = join(baseDir, "index.html");
       } else {
-        return null;
+        if (isSpa) {
+          const fallback = findIndexHtml(deployDir);
+          if (fallback) return { file: fallback, isIndexFallback: true };
+        }
+        return { file: null, isIndexFallback: false };
       }
     }
   } else {
-    // Map _next/static/* -> static/* and _next/build/* -> build/*
     let resolvedParts = pathParts;
     if (pathParts[0] === "_next" && pathParts.length >= 2) {
       const subdir = pathParts[1];
@@ -261,36 +354,108 @@ function resolveFilePath(deployDir: string, pathParts: string[]): string | null 
     filePath = join(deployDir, ...resolvedParts);
   }
 
-  if (!existsSync(filePath)) return null;
+  if (!existsSync(filePath)) {
+    if (isSpa) {
+      const fallback = findIndexHtml(deployDir);
+      if (fallback) return { file: fallback, isIndexFallback: true };
+    }
+    return { file: null, isIndexFallback: false };
+  }
+
   if (lstatSync(filePath).isDirectory()) {
     const dirIndex = join(filePath, "index.html");
     if (existsSync(dirIndex)) {
       filePath = dirIndex;
     } else {
-      return null;
+      if (isSpa) {
+        const fallback = findIndexHtml(deployDir);
+        if (fallback) return { file: fallback, isIndexFallback: true };
+      }
+      return { file: null, isIndexFallback: false };
     }
   }
 
-  return filePath;
+  return { file: filePath, isIndexFallback: false };
 }
 
-function serveStatic(deployDir: string, pathParts: string[], slug: string): Response {
-  const filePath = resolveFilePath(deployDir, pathParts);
+function findIndexHtml(deployDir: string): string | null {
+  const candidates = [
+    join(deployDir, "index.html"),
+    join(deployDir, "server", "app", "index.html"),
+    join(deployDir, "public", "index.html"),
+  ];
+
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+
+  const appDir = join(deployDir, "server", "app");
+  if (existsSync(appDir)) {
+    const items = readdirSync(appDir).filter((f) => f.endsWith(".html"));
+    if (items.length === 1) return join(appDir, items[0]);
+  }
+
+  return null;
+}
+
+function serveStatic(
+  deployDir: string,
+  pathParts: string[],
+  slug: string,
+  isSpa: boolean,
+  basePath: string,
+): Response {
+  const { file: filePath, isIndexFallback } = resolveFilePath(deployDir, pathParts, isSpa);
   if (!filePath) return new Response("Not found", { status: 404 });
 
   const ext = extname(filePath).toLowerCase();
   const contentType = MIME[ext] || "application/octet-stream";
   const content = readFileSync(filePath);
+  const isSubdomain = basePath === "/";
 
   if (ext === ".html" || ext === ".rsc") {
-    const rewritten = rewriteHtmlPaths(content.toString("utf-8"), `/p/${slug}`);
-    return new Response(rewritten, {
-      headers: { "Content-Type": contentType },
+    let html = content.toString("utf-8");
+    if (!isSubdomain) {
+      html = rewriteHtmlPaths(html, basePath);
+    }
+    if (isIndexFallback) {
+      const baseHref = isSubdomain ? "/" : `${basePath}/`;
+      html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${baseHref}">`);
+    }
+    return new Response(html, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "no-cache",
+      },
+    });
+  }
+
+  if (ext === ".css") {
+    const body = isSubdomain ? content.toString("utf-8") : rewriteCssPaths(content.toString("utf-8"), basePath);
+    return new Response(body, {
+      headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable" },
+    });
+  }
+
+  if (ext === ".js" || ext === ".mjs") {
+    const body = isSubdomain ? content.toString("utf-8") : rewriteJsPaths(content.toString("utf-8"), basePath);
+    return new Response(body, {
+      headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable" },
+    });
+  }
+
+  if (ext === ".svg") {
+    const body = isSubdomain ? content.toString("utf-8") : rewriteSvgPaths(content.toString("utf-8"), basePath);
+    return new Response(body, {
+      headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable" },
     });
   }
 
   return new Response(content, {
-    headers: { "Content-Type": contentType },
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
+    },
   });
 }
 
@@ -344,7 +509,6 @@ async function resolveSlug(
     return { deploymentId: deployment.id, projectId: project.id };
   }
 
-  // No successful deployment yet — check for an in-progress one
   const latestDeployment = await prisma.deployment.findFirst({
     where: { projectId: project.id },
     orderBy: { createdAt: "desc" },
@@ -359,6 +523,29 @@ async function resolveSlug(
   return null;
 }
 
+function detectSpa(deployDir: string): boolean {
+  if (existsSync(join(deployDir, ".grob-server"))) {
+    try {
+      const marker = JSON.parse(readFileSync(join(deployDir, ".grob-server"), "utf-8"));
+      if (marker.type === "static") return true;
+    } catch {}
+  }
+
+  if (
+    existsSync(join(deployDir, "package.json"))
+  ) {
+    try {
+      const pkg = JSON.parse(readFileSync(join(deployDir, "package.json"), "utf-8"));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      if (deps.react || deps.vue || deps.svelte || deps.angular || deps.solid) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return false;
+}
+
 async function handleRequest(
   req: Request,
   slug: string,
@@ -367,7 +554,6 @@ async function handleRequest(
   const resolved = await resolveSlug(slug);
   if (!resolved) return notFound();
 
-  // Redirect to deployment detail if no successful deployment exists yet
   if ("redirect" in resolved) {
     const location = isSubdomainRequest(req)
       ? `http://localhost:3000${resolved.redirect}`
@@ -394,20 +580,32 @@ async function handleRequest(
     }
   }
 
-  // For Next.js static builds, also try server/app/{path}.html for sub-routes
   const nextAppDir = join(deployDir, "server", "app");
   if (pathParts.length > 0 && existsSync(nextAppDir)) {
     const subPageFile = join(nextAppDir, ...pathParts) + ".html";
     if (existsSync(subPageFile)) {
       const contentType = MIME[".html"];
       const content = readFileSync(subPageFile).toString("utf-8");
-      return new Response(rewriteHtmlPaths(content, `/p/${slug}`), {
-        headers: { "Content-Type": contentType },
+      const isSubdomain2 = isSubdomainRequest(req);
+      const html = isSubdomain2 ? content : rewriteHtmlPaths(content, `/p/${slug}`);
+      return new Response(html, {
+        headers: { "Content-Type": contentType, "Cache-Control": "no-cache" },
+      });
+    }
+
+    const subPageRsc = join(nextAppDir, ...pathParts) + ".rsc";
+    if (existsSync(subPageRsc)) {
+      const content = readFileSync(subPageRsc).toString("utf-8");
+      return new Response(content, {
+        headers: { "Content-Type": "text/x-component; charset=utf-8", "Cache-Control": "no-cache" },
       });
     }
   }
 
-  return serveStatic(deployDir, pathParts, slug);
+  const isSpa = detectSpa(deployDir);
+  const isSubdomain = isSubdomainRequest(req);
+  const basePath = isSubdomain ? "/" : `/p/${slug}`;
+  return serveStatic(deployDir, pathParts, slug, isSpa, basePath);
 }
 
 export async function GET(

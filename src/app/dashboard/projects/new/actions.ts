@@ -15,6 +15,14 @@ export async function createProject(formData: FormData) {
 
   const projectName = (formData.get("name") as string) || "my-project";
 
+  // Reject duplicate project names for the same user
+  const existing = await prisma.project.findFirst({
+    where: { userId: session.user.id, name: projectName },
+  });
+  if (existing) {
+    throw new Error(`A project named "${projectName}" already exists.`);
+  }
+
   // Generate unique slug
   const existingSlugs = (
     await prisma.project.findMany({ select: { slug: true } })
@@ -83,4 +91,39 @@ export async function createProject(formData: FormData) {
 
   // Redirect to the deployment page — the TriggerBuild component will start the build
   redirect(`/dashboard/projects/${project.id}/deployments/${deployment.id}`);
+}
+
+export async function cleanupDuplicateProjects() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const projects = await prisma.project.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true },
+  });
+
+  const seen = new Map<string, string>();
+  const toDelete: string[] = [];
+
+  for (const p of projects) {
+    if (seen.has(p.name)) {
+      toDelete.push(p.id);
+    } else {
+      seen.set(p.name, p.id);
+    }
+  }
+
+  if (toDelete.length > 0) {
+    await prisma.deployment.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.envVar.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.domain.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.webhook.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.cdnCacheRule.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.cdnEdgeConfig.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.cdnPurgeLog.deleteMany({ where: { projectId: { in: toDelete } } });
+    await prisma.project.deleteMany({ where: { id: { in: toDelete } } });
+  }
+
+  return { deleted: toDelete.length, kept: seen.size };
 }

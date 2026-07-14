@@ -157,7 +157,7 @@ export default function IntegrationsPage() {
             className="w-full rounded-xl border border-border bg-surface/30 pl-10 pr-4 py-2 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="sidebar-scroll flex items-center gap-2 overflow-x-auto">
           {categories.map((cat) => (
             <button
               key={cat}

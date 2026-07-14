@@ -40,11 +40,11 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         </div>
         <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
           <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Build Command</p>
-          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full">{project.buildCommand}</p>
+          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full scrollbar-hidden">{project.buildCommand}</p>
         </div>
         <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
           <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Output Directory</p>
-          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full">{project.outputDir}</p>
+          <p className="font-mono text-sm text-text bg-surface px-2 py-1 rounded w-max overflow-x-auto max-w-full scrollbar-hidden">{project.outputDir}</p>
         </div>
       </div>
 

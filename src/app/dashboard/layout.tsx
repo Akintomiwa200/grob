@@ -49,7 +49,7 @@ export default async function DashboardLayout({
           projects={projects}
         />
 
-        <main className="flex-1 overflow-y-auto p-6 text-text">
+        <main className="sidebar-scroll flex-1 overflow-y-auto p-6 text-text">
           {children}
         </main>
       </div>

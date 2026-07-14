@@ -124,7 +124,7 @@ export default function AgentPage() {
               </button>
             </div>
           </div>
-          <div className="h-96 overflow-y-auto p-6 space-y-4">
+          <div className="sidebar-scroll h-96 overflow-y-auto p-6 space-y-4">
             {messages.map((msg, i) => (
               <div
                 key={i}

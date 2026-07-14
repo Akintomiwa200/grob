@@ -36,20 +36,3 @@ export async function removeDomain(projectId: string, domainId: string) {
 
   revalidatePath(`/dashboard/projects/${projectId}/domains`);
 }
-
-export async function verifyDomain(projectId: string, domainId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-
-  const domain = await prisma.domain.findFirst({
-    where: { id: domainId, project: { userId: session.user.id } },
-  });
-  if (!domain) throw new Error("Domain not found");
-
-  await prisma.domain.update({
-    where: { id: domainId },
-    data: { verified: true },
-  });
-
-  revalidatePath(`/dashboard/projects/${projectId}/domains`);
-}

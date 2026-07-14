@@ -82,7 +82,7 @@ export default function LiveChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="sidebar-scroll flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import ProjectCardMenu from "@/components/ProjectCardMenu";
 
 export default async function ProjectsPage() {
   const session = await auth();
@@ -60,44 +61,81 @@ export default async function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {projects.map((project) => {
             const latest = project.deployments[0];
+            const status = latest?.status || "pending";
             return (
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className="group block bg-bg/20 border border-border rounded-xl p-5 hover:border-[#6E5BFF]/40 transition-all"
+                className="group block bg-bg/20 border border-border rounded-xl p-4 hover:border-border transition-all"
               >
+                {/* Card Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 truncate flex-1">
-                    <div className="w-9 h-9 rounded-lg bg-surface/80 flex-shrink-0 flex items-center justify-center text-xs font-bold text-text">
+                    <div className="w-8 h-8 rounded-lg bg-surface/80 flex-shrink-0 flex items-center justify-center text-xs font-medium text-text">
                       {project.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div className="truncate">
-                      <h3 className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+                      <h3 className="text-sm font-medium truncate">
                         {project.name}
                       </h3>
-                      <p className="text-[10px] text-muted truncate font-mono">
+                      <p className="text-[10px] text-muted truncate">
                         {project.slug}.localhost:3000
                       </p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center">
+                      <span className="text-[10px] text-muted">✓</span>
+                    </div>
+                    <ProjectCardMenu
+                      projectId={project.id}
+                      projectName={project.name}
+                      slug={project.slug}
+                    />
+                  </div>
                 </div>
 
-                {project.description && (
-                  <p className="text-xs text-muted mb-3 line-clamp-2">{project.description}</p>
-                )}
-
-                <div className="flex items-center justify-between text-[11px] text-muted pt-2 border-t border-border/50">
-                  <div className="flex items-center gap-1.5">
-                    {latest ? (
-                      <>
-                        <span className={`w-1.5 h-1.5 rounded-full ${latest.status === "success" ? "bg-green-500" : latest.status === "failed" ? "bg-red-500" : "bg-yellow-500"}`} />
-                        <span>{latest.commitMsg || latest.status}</span>
-                      </>
-                    ) : (
-                      <span>No deployments</span>
-                    )}
+                {/* User/Git Info */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 rounded-full bg-zinc-700 flex items-center justify-center text-[8px] text-white">
+                    A
                   </div>
-                  <span>{project._count.deployments} deploy{project._count.deployments !== 1 ? "s" : ""}</span>
+                  <span className="text-[10px] text-muted font-medium truncate">
+                    {project.gitUrl
+                      ? project.gitUrl.replace("https://github.com/", "")
+                      : project.name.toLowerCase().replace(/\s/g, "-")}
+                  </span>
+                </div>
+
+                {/* Last Deployment Info */}
+                <div className="space-y-2">
+                  <p className="text-sm text-text line-clamp-1">
+                    {project.description || latest?.commitMsg || "update project configuration"}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-muted">
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          status === "success"
+                            ? "bg-green-500"
+                            : status === "failed"
+                              ? "bg-red-500"
+                              : status === "building"
+                                ? "bg-blue-500"
+                                : "bg-zinc-500"
+                        }`}
+                      />
+                      <span>{latest ? "main" : "—"}</span>
+                    </span>
+                    <span>
+                      {latest
+                        ? new Date(latest.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "No deploys"}
+                    </span>
+                  </div>
                 </div>
               </Link>
             );

@@ -12,8 +12,6 @@ import {
   Trash2,
   Lock,
   Unlock,
-  Info,
-  ExternalLink,
 } from "lucide-react";
 import {
   saveEnvVars,
@@ -50,7 +48,7 @@ export default async function ProjectSettingsPage(props: {
   }/api/webhooks/${project.id}`;
 
   return (
-    <div className="space-y-10 max-w-4xl">
+    <div className="max-w-6xl space-y-10">
       <div>
         <h2 className="text-xl font-semibold text-text mb-1">Settings</h2>
         <p className="text-muted text-sm">
@@ -59,7 +57,7 @@ export default async function ProjectSettingsPage(props: {
         </p>
       </div>
 
-      <div className="max-w-2xl space-y-10">
+      <div className="space-y-10">
         {/* Build Configuration */}
         <section>
           <div className="flex items-center gap-2 mb-4">
@@ -71,7 +69,7 @@ export default async function ProjectSettingsPage(props: {
               action={saveProjectConfig.bind(null, project.id)}
               className="space-y-4"
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-muted mb-1.5">
                     Project Name
@@ -93,6 +91,20 @@ export default async function ProjectSettingsPage(props: {
                     className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs text-muted mb-1.5">
+                    Git Repository URL
+                  </label>
+                  <div className="relative">
+                    <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                    <input
+                      name="gitUrl"
+                      defaultValue={project.gitUrl}
+                      placeholder="https://github.com/username/repo"
+                      className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm font-mono text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-xs text-muted mb-1.5">
@@ -105,21 +117,7 @@ export default async function ProjectSettingsPage(props: {
                   className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-muted mb-1.5">
-                  Git Repository URL
-                </label>
-                <div className="relative">
-                  <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                  <input
-                    name="gitUrl"
-                    defaultValue={project.gitUrl}
-                    placeholder="https://github.com/username/repo"
-                    className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm font-mono text-text placeholder-muted bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-muted mb-1.5">
                     Build Command
@@ -140,8 +138,6 @@ export default async function ProjectSettingsPage(props: {
                     className="w-full px-3 py-2.5 border border-border rounded-lg text-sm font-mono text-text bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-muted mb-1.5">
                     Install Command
@@ -152,7 +148,6 @@ export default async function ProjectSettingsPage(props: {
                     className="w-full px-3 py-2.5 border border-border rounded-lg text-sm font-mono text-text bg-bg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
                   />
                 </div>
-                <div />
               </div>
               <div className="pt-2">
                 <button
@@ -243,7 +238,7 @@ export default async function ProjectSettingsPage(props: {
                             Secret:{" "}
                             <code className="font-mono">
                               {wh.secret
-                                ? wh.secret.slice(0, 8) + "••••"
+                                ? wh.secret.slice(0, 8) + "\u2022\u2022\u2022\u2022"
                                 : "none"}
                             </code>
                           </span>
@@ -336,7 +331,7 @@ export default async function ProjectSettingsPage(props: {
                   <div className="w-9 h-5 bg-border rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
                 </label>
               </div>
-              <div>
+              <div className="max-w-md">
                 <label className="block text-xs text-muted mb-1.5">
                   Password
                 </label>

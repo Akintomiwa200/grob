@@ -205,7 +205,7 @@ export function DeploymentLogs({
         </button>
       </div>
 
-      <div className="max-h-96 overflow-y-auto overflow-x-auto rounded-xl bg-bg border border-border p-4 font-mono text-xs leading-[1.7]">
+      <div className="sidebar-scroll max-h-96 overflow-y-auto overflow-x-auto rounded-xl bg-bg border border-border p-4 font-mono text-xs leading-[1.7]">
         {view === "build" ? (
           buildLines.length === 0 ? (
             liveStatus === "building" ? (

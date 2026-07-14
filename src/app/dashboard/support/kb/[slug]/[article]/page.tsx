@@ -787,7 +787,7 @@ export default async function KBArticlePage(props: {
           [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:space-y-1
           [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:space-y-1
           [&_li]:text-muted
-          [&_pre]:bg-bg [&_pre]:border [&_pre]:border-border [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:text-sm
+          [&_pre]:bg-bg [&_pre]:border [&_pre]:border-border [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:scrollbar-hidden [&_pre]:text-sm
           [&_code]:text-accent
           [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm
           [&_th]:text-left [&_th]:py-2 [&_th]:px-3 [&_th]:border-b [&_th]:border-border [&_th]:text-text

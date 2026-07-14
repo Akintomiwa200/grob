@@ -95,6 +95,9 @@ model Project {
   members        ProjectMember[]
   redirects      ProjectsRedirect[]
   webhooks       Webhook[]
+  cdnRules       CdnCacheRule[]
+  cdnEdgeConfig  CdnEdgeConfig?
+  cdnPurgeLogs   CdnPurgeLog[]
 }
 
 model ProjectMember {
@@ -249,4 +252,38 @@ model StorageBucket {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, name])
+}
+
+model CdnCacheRule {
+  id        String   @id @default(cuid())
+  projectId String
+  ruleId    String
+  pattern   String
+  ttl       String   @default("60")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, ruleId])
+}
+
+model CdnEdgeConfig {
+  id                     String   @id @default(cuid())
+  projectId              String   @unique
+  minTtl                 Int      @default(60)
+  maxTtl                 Int      @default(31536000)
+  staleWhileRevalidate   Int      @default(86400)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  project                Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model CdnPurgeLog {
+  id        String   @id @default(cuid())
+  projectId String
+  path      String
+  status    String   @default("completed")
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

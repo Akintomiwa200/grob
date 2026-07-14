@@ -105,6 +105,28 @@ const NAV_GROUPS: NavItem[][] = [
   ],
 ];
 
+const PROJECT_SCOPED = new Set([
+  "/dashboard/deployments",
+  "/dashboard/logs",
+  "/dashboard/analytics",
+  "/dashboard/speed-insights",
+  "/dashboard/observability",
+  "/dashboard/firewall",
+  "/dashboard/cdn",
+  "/dashboard/env",
+  "/dashboard/domains",
+  "/dashboard/connect",
+  "/dashboard/integrations",
+  "/dashboard/storage",
+  "/dashboard/flags",
+  "/dashboard/agent",
+  "/dashboard/ai-gateway",
+  "/dashboard/sandboxes",
+  "/dashboard/workflows",
+  "/dashboard/images",
+  "/dashboard/usage",
+]);
+
 type SidebarUser = {
   name?: string | null;
   email?: string | null;
@@ -140,6 +162,9 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
     }
     return pathname.startsWith(href);
   }
+
+  const projectMatch = pathname.match(/^\/dashboard\/projects\/([^/]+)/);
+  const activeProjectId = projectMatch ? projectMatch[1] : null;
 
   const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
 
@@ -211,12 +236,20 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
         {NAV_GROUPS.map((group, i) => (
           <div key={i} className="mb-3">
             <div className="space-y-0.5">
-              {group.map((item) => {
-                const active = isActive(item.href);
+              {group.map((item, j) => {
+                const isFirstChild = i === 0 && j === 0;
+                const label = isFirstChild && activeProjectId ? "Overview" : item.label;
+                let href = item.href;
+                if (isFirstChild && activeProjectId) {
+                  href = `/dashboard/projects/${activeProjectId}`;
+                } else if (activeProjectId && PROJECT_SCOPED.has(item.href)) {
+                  href = `/dashboard/projects/${activeProjectId}${item.href.replace("/dashboard", "")}`;
+                }
+                const active = isActive(href) && !(isFirstChild && !activeProjectId && pathname.startsWith("/dashboard/projects"));
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={href}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-sm transition-colors ${
                       active
                         ? "bg-white/[0.08] font-medium text-[#E7E9EE]"
@@ -227,7 +260,7 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
                       className="h-4 w-4 shrink-0"
                       strokeWidth={1.75}
                     />
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="flex-1 truncate">{label}</span>
                     {item.badge && (
                       <span className="rounded-full bg-[#6E5BFF]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#8F7CFF]">
                         {item.badge}

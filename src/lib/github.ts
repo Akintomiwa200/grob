@@ -94,6 +94,25 @@ export async function deleteGitHubWebhook(userId: string, repoFullName: string, 
   await octokit.rest.repos.deleteWebhook({ owner, repo, hook_id: hookId });
 }
 
+export async function getLatestCommit(userId: string, repoFullName: string, branch = "main") {
+  const octokit = await getOctokit(userId);
+  if (!octokit) return null;
+
+  const [owner, repo] = repoFullName.split("/");
+  try {
+    const { data } = await octokit.rest.repos.getCommit({ owner, repo, ref: branch });
+    return {
+      sha: data.sha,
+      message: data.commit.message.split("\n")[0],
+      author: data.commit.author?.name || "unknown",
+      date: data.commit.author?.date || new Date().toISOString(),
+      branch,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getRepoFramework(userId: string, repoFullName: string) {
   const octokit = await getOctokit(userId);
   if (!octokit) return null;
