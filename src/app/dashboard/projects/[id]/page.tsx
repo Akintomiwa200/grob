@@ -4,6 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { deployProject } from "./actions";
 import { DeployMenu } from "./deployments/[deploymentId]/trigger-build";
+import { AutoRedeploy } from "./AutoRedeploy";
+import { LiveRefresh } from "./LiveRefresh";
+import { DeploymentCardMenu } from "./DeploymentCardMenu";
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -16,6 +19,14 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   });
 
   if (!project) notFound();
+
+  const hasActiveDeploy = project.deployments.some(
+    (d) => d.status === "building" || d.status === "pending",
+  );
+
+  const activeDeploymentId = project.deployments.find(
+    (d) => d.status === "success",
+  )?.id ?? null;
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -33,6 +44,8 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   return (
     <>
+      <AutoRedeploy projectId={project.id} />
+      <LiveRefresh active={hasActiveDeploy} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <div className="p-5 border border-border rounded-xl bg-bg/50 shadow-sm">
           <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1.5">Framework</p>
@@ -75,12 +88,11 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         ) : (
           <div className="border border-border rounded-xl bg-bg/50 shadow-sm divide-y divide-border">
             {project.deployments.map((dep) => (
-              <Link
-                key={dep.id}
-                href={`/dashboard/projects/${project.id}/deployments/${dep.id}`}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
-              >
-                <div className="flex items-start gap-4 mb-3 sm:mb-0">
+              <div key={dep.id} className="relative flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-white/[0.02] transition-colors">
+                <Link
+                  href={`/dashboard/projects/${project.id}/deployments/${dep.id}`}
+                  className="flex-1 flex items-start gap-4"
+                >
                   <span className={`mt-1.5 w-2.5 h-2.5 shrink-0 rounded-full ${statusDots[dep.status] || "bg-zinc-500"}`} />
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
@@ -90,6 +102,11 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                       <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold uppercase tracking-wider ${statusColors[dep.status] || "bg-zinc-800 border-zinc-700 text-zinc-400"}`}>
                         {dep.status}
                       </span>
+                      {dep.id === activeDeploymentId && (
+                        <span className="px-2 py-0.5 border border-green-500/30 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-green-500/10 text-green-400">
+                          Active
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted">
                       <span className="flex items-center gap-1.5">
@@ -108,12 +125,15 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                       )}
                     </div>
                   </div>
+                </Link>
+                <div className="flex items-center gap-3 pl-6 sm:pl-0 mt-3 sm:mt-0">
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center text-xs text-muted">
+                    <p>{new Date(dep.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <p className="mt-0.5">{new Date(dep.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
+                  </div>
+                  <DeploymentCardMenu projectId={project.id} deploymentId={dep.id} />
                 </div>
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center text-xs text-muted pl-6 sm:pl-0">
-                  <p>{new Date(dep.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  <p className="mt-0.5">{new Date(dep.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
-                </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

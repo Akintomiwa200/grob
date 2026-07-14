@@ -454,31 +454,49 @@ async function copyNextjsOutput(
     }
 
     writeRuntimeEnv(deployPath, envVars);
-    writeServerMarker(deployPath, "nextjs-standalone", "node", [".next/standalone/server.js"], ".next/standalone", 3000);
+    writeServerMarker(deployPath, "nextjs-standalone", "node", ["server.js"], ".", 3000);
     ok(`Next.js standalone server copied`);
     info(`Server will be started on first request`);
   } else {
     sys(`Detected Next.js output — copying build output...`);
-    const outputPath = join(runDir, outputDir);
-    if (existsSync(outputPath) && outputDir !== ".next") {
-      cpSync(outputPath, deployPath, { recursive: true });
-    } else {
-      const nextOutput = join(runDir, ".next");
-      if (existsSync(nextOutput)) {
-        cpSync(nextOutput, deployPath, { recursive: true });
-      }
-      const publicSrc = join(runDir, "public");
-      if (existsSync(publicSrc)) {
-        cpSync(publicSrc, join(deployPath, "public"), { recursive: true });
-      }
+
+    const nextDest = join(deployPath, ".next");
+    const nextOutput = join(runDir, ".next");
+    if (existsSync(nextOutput)) {
+      cpSync(nextOutput, nextDest, { recursive: true });
+    }
+
+    const publicSrc = join(runDir, "public");
+    if (existsSync(publicSrc)) {
+      cpSync(publicSrc, join(deployPath, "public"), { recursive: true });
+    }
+
+    const pkgSrc = join(runDir, "package.json");
+    if (existsSync(pkgSrc)) {
+      cpSync(pkgSrc, join(deployPath, "package.json"));
     }
 
     writeRuntimeEnv(deployPath, envVars);
 
-    // Non-standalone Next.js — can't run `node server.js` without standalone output.
-    // Use npx serve to serve the static build output (prerendered pages + static assets).
-    writeServerMarker(deployPath, "nextjs", "npx", ["serve", "."], ".", 3000);
-    ok(`Next.js build output copied`);
+    sys(`Installing next runtime...`);
+    try {
+      await execa("npm", ["install", "--save", "next@latest"], {
+        cwd: deployPath,
+        shell: true,
+        timeout: 120_000,
+        all: true,
+        env: { ...process.env, NODE_ENV: "production" },
+      });
+      sys(`Next.js runtime installed`);
+    } catch {
+      warn(`Failed to install next — falling back to static serve`);
+      writeServerMarker(deployPath, "nextjs", "npx", ["serve", "."], ".", 3000);
+      ok(`Next.js build output copied`);
+      return;
+    }
+
+    writeServerMarker(deployPath, "nextjs", "npx", ["next", "start"], ".", 3000);
+    ok(`Next.js server ready`);
   }
 }
 

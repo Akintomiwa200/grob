@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Variable } from "lucide-react";
 import { EnvVarsManager } from "./EnvVarsManager";
+import { LiveRefresh } from "../LiveRefresh";
 
 export default async function EnvPage(props: {
   params: Promise<{ id: string }>;
@@ -17,6 +18,10 @@ export default async function EnvPage(props: {
   });
   if (!project) notFound();
 
+  const hasActiveDeploy = (await prisma.deployment.findFirst({
+    where: { projectId: id, status: { in: ["building", "pending"] } },
+  })) !== null;
+
   const envVars = project.envVars.map((v) => ({
     id: v.id,
     key: v.key,
@@ -28,6 +33,7 @@ export default async function EnvPage(props: {
 
   return (
     <div className="max-w-6xl space-y-6">
+      <LiveRefresh active={hasActiveDeploy} />
       <div>
         <h2 className="text-xl font-semibold text-text mb-1">
           Environment Variables

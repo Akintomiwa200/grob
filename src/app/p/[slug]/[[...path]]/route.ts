@@ -179,14 +179,18 @@ async function proxyRequest(
   }
 
   const targetPath = pathParts.length > 0 ? "/" + pathParts.join("/") : "/";
+  const search = req.url.includes("?") ? req.url.split("?")[1] : "";
+  const targetUrl = search ? `${targetPath}?${search}` : targetPath;
 
   try {
     const headers = new Headers();
     req.headers.forEach((value, key) => {
       if (key !== "host") headers.set(key, value);
     });
+    headers.set("x-forwarded-host", req.headers.get("host") || "");
+    headers.set("host", `127.0.0.1:${port}`);
 
-    const proxyRes = await fetch(`http://127.0.0.1:${port}${targetPath}`, {
+    const proxyRes = await fetch(`http://127.0.0.1:${port}${targetUrl}`, {
       method: req.method,
       headers,
       body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
@@ -311,8 +315,11 @@ function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean)
   if (pathParts.length === 0) {
     let baseDir = deployDir;
     const nextAppDir = join(deployDir, "server", "app");
+    const nextAppDirNew = join(deployDir, ".next", "server", "app");
     if (existsSync(nextAppDir)) {
       baseDir = nextAppDir;
+    } else if (existsSync(nextAppDirNew)) {
+      baseDir = nextAppDirNew;
     }
 
     filePath = join(baseDir, "index.html");
@@ -352,6 +359,13 @@ function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean)
       }
     }
     filePath = join(deployDir, ...resolvedParts);
+
+    if (!existsSync(filePath)) {
+      const nextCandidate = join(deployDir, ".next", ...resolvedParts);
+      if (existsSync(nextCandidate)) {
+        filePath = nextCandidate;
+      }
+    }
   }
 
   if (!existsSync(filePath)) {
@@ -574,15 +588,22 @@ async function handleRequest(
       marker = JSON.parse(readFileSync(markerPath, "utf-8"));
     } catch {}
 
-    const isNextJsStatic = marker?.type === "nextjs" || existsSync(join(deployDir, "server", "app"));
-    if (!isNextJsStatic) {
-      return proxyRequest(req, resolved.deploymentId, pathParts);
+    const isServeStatic = marker?.startCmd === "npx" && marker?.startArgs?.[0] === "serve";
+    if (isServeStatic) {
+      const isSpa = detectSpa(deployDir);
+      const isSubdomain = isSubdomainRequest(req);
+      const basePath = isSubdomain ? "/" : `/p/${slug}`;
+      return serveStatic(deployDir, pathParts, slug, isSpa, basePath);
     }
+
+    return proxyRequest(req, resolved.deploymentId, pathParts);
   }
 
   const nextAppDir = join(deployDir, "server", "app");
-  if (pathParts.length > 0 && existsSync(nextAppDir)) {
-    const subPageFile = join(nextAppDir, ...pathParts) + ".html";
+  const nextAppDirNew = join(deployDir, ".next", "server", "app");
+  const activeNextAppDir = existsSync(nextAppDir) ? nextAppDir : existsSync(nextAppDirNew) ? nextAppDirNew : null;
+  if (pathParts.length > 0 && activeNextAppDir) {
+    const subPageFile = join(activeNextAppDir, ...pathParts) + ".html";
     if (existsSync(subPageFile)) {
       const contentType = MIME[".html"];
       const content = readFileSync(subPageFile).toString("utf-8");
@@ -593,7 +614,7 @@ async function handleRequest(
       });
     }
 
-    const subPageRsc = join(nextAppDir, ...pathParts) + ".rsc";
+    const subPageRsc = join(activeNextAppDir, ...pathParts) + ".rsc";
     if (existsSync(subPageRsc)) {
       const content = readFileSync(subPageRsc).toString("utf-8");
       return new Response(content, {

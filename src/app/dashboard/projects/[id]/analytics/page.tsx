@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Calendar,
 } from "lucide-react";
+import { LiveRefresh } from "../LiveRefresh";
 
 export default async function AnalyticsPage(props: {
   params: Promise<{ id: string }>;
@@ -22,6 +23,10 @@ export default async function AnalyticsPage(props: {
     include: { deployments: { orderBy: { createdAt: "desc" } } },
   });
   if (!project) notFound();
+
+  const hasActiveDeploy = project.deployments.some(
+    (d) => d.status === "building" || d.status === "pending",
+  );
 
   const deployments = project.deployments;
   const total = deployments.length;
@@ -68,6 +73,7 @@ export default async function AnalyticsPage(props: {
 
   return (
     <div className="max-w-6xl space-y-6">
+      <LiveRefresh active={hasActiveDeploy} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-text mb-1">Analytics</h2>

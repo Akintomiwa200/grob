@@ -41,6 +41,7 @@ import { DeploymentStatus } from "./deployment-status";
 import { DeploymentLogs } from "./logs";
 import { DeployMenu } from "./trigger-build";
 import { rollbackToDeployment } from "./actions";
+import { LiveRefresh } from "../../LiveRefresh";
 
 export default async function DeploymentDetailPage(props: {
   params: Promise<{ id: string; deploymentId: string }>;
@@ -70,6 +71,7 @@ export default async function DeploymentDetailPage(props: {
 
   return (
     <div>
+      <LiveRefresh active={deployment.status === "building" || deployment.status === "pending"} />
       <div className="mb-6 flex items-start justify-between">
         <Link
           href={`/dashboard/projects/${id}`}

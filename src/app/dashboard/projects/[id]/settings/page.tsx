@@ -23,6 +23,7 @@ import {
 } from "./actions";
 import { EnvVarsForm } from "./EnvVarsForm";
 import { CopyButton } from "./CopyButton";
+import { LiveRefresh } from "../LiveRefresh";
 
 export default async function ProjectSettingsPage(props: {
   params: Promise<{ id: string }>;
@@ -41,6 +42,10 @@ export default async function ProjectSettingsPage(props: {
   });
   if (!project) notFound();
 
+  const hasActiveDeploy = (await prisma.deployment.findFirst({
+    where: { projectId: id, status: { in: ["building", "pending"] } },
+  })) !== null;
+
   const webhookUrl = `${
     process.env.VERCEL_URL
       ? "https://" + process.env.VERCEL_URL
@@ -49,6 +54,7 @@ export default async function ProjectSettingsPage(props: {
 
   return (
     <div className="max-w-6xl space-y-10">
+      <LiveRefresh active={hasActiveDeploy} />
       <div>
         <h2 className="text-xl font-semibold text-text mb-1">Settings</h2>
         <p className="text-muted text-sm">

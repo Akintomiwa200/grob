@@ -27,7 +27,7 @@ export async function saveEnvVars(projectId: string, formData: FormData) {
         projectId,
         key,
         value: values[i] || "",
-        buildTime: buildTimes.includes(String(i)),
+        buildTime: buildTimes[i] === "1",
       },
     });
   }

@@ -26,7 +26,7 @@ function rowId() {
   return `row-${Date.now()}-${++_rowId}`;
 }
 
-function newRow(key = "", value = "", buildTime = true): EnvRow {
+function newRow(key = "", value = "", buildTime = false): EnvRow {
   return { id: rowId(), key, value, buildTime };
 }
 

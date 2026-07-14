@@ -11,6 +11,7 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
+import { LiveRefresh } from "../LiveRefresh";
 
 export default async function UsagePage(props: {
   params: Promise<{ id: string }>;
@@ -24,6 +25,10 @@ export default async function UsagePage(props: {
     include: { deployments: { orderBy: { createdAt: "desc" } } },
   });
   if (!project) notFound();
+
+  const hasActiveDeploy = project.deployments.some(
+    (d) => d.status === "building" || d.status === "pending",
+  );
 
   const totalDeployments = project.deployments.length;
   const successCount = project.deployments.filter(
@@ -62,6 +67,7 @@ export default async function UsagePage(props: {
 
   return (
     <div className="max-w-6xl space-y-8">
+      <LiveRefresh active={hasActiveDeploy} />
       <div>
         <h2 className="text-xl font-semibold text-text mb-1">Usage</h2>
         <p className="text-muted text-sm">

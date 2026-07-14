@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { FileText } from "lucide-react";
 import { LogViewer } from "./LogViewer";
+import { LiveRefresh } from "../LiveRefresh";
 
 export default async function LogsPage(props: {
   params: Promise<{ id: string }>;
@@ -17,6 +18,10 @@ export default async function LogsPage(props: {
   });
   if (!project) notFound();
 
+  const hasActiveDeploy = project.deployments.some(
+    (d) => d.status === "building" || d.status === "pending",
+  );
+
   const totalLogs = project.deployments.reduce(
     (acc, d) => acc + (d.logs ? d.logs.split("\n").length : 0),
     0
@@ -24,6 +29,7 @@ export default async function LogsPage(props: {
 
   return (
     <div className="max-w-6xl space-y-6">
+      <LiveRefresh active={hasActiveDeploy} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-text mb-1">Logs</h2>
