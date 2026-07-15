@@ -19,6 +19,11 @@ export default async function DashboardLayout({
     orderBy: { createdAt: "desc" },
   });
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user!.id },
+    select: { status: true },
+  });
+
   return (
     <div className="flex h-screen bg-bg">
       <Sidebar
@@ -47,6 +52,7 @@ export default async function DashboardLayout({
           userName={session.user?.name}
           userImage={session.user?.image}
           projects={projects}
+          initialStatus={(user?.status as "online" | "offline") || "online"}
         />
 
         <main className="sidebar-scroll flex-1 overflow-y-auto p-6 text-text">

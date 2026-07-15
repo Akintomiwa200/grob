@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, lstatSync, readdirSync } from "fs";
+import { readFileSync, existsSync, lstatSync, readdirSync, writeFileSync } from "fs";
 import { join, extname } from "path";
 import { execa } from "execa";
 import { prisma } from "@/lib/prisma";
@@ -128,16 +128,43 @@ async function getOrCreateServer(
   }
 
   const port = getPort(deploymentId);
-  const runtimeEnv = loadEnvFile(deployDir);
-  const cwd = resolveStartCwd(marker, deployDir);
-  const env = { ...process.env, ...runtimeEnv, PORT: String(port) };
 
-  let startArgs = interpolatePort(marker.startArgs, port);
-  const startCmd = marker.startCmd;
+  let startCmd = marker.startCmd;
+  let startArgs = [...marker.startArgs];
 
-  if (startCmd === "npx" && startArgs[0] === "serve") {
+  const isNextjs = marker.type === "nextjs";
+
+  if (isNextjs && startCmd === "npx" && startArgs[0] === "serve") {
+    const nextBin = join(/*turbopackIgnore: true*/ deployDir, "node_modules", ".bin", "next");
+    const nextExe = join(/*turbopackIgnore: true*/ deployDir, "node_modules", ".bin", "next.cmd");
+    if (existsSync(/*turbopackIgnore: true*/ nextBin) || existsSync(/*turbopackIgnore: true*/ nextExe)) {
+      startCmd = nextExe;
+      startArgs = ["start", "-p", String(port)];
+    } else {
+      startCmd = "npx";
+      startArgs = ["next", "start", "-p", String(port)];
+    }
+  }
+
+  if (startCmd === "npx" && startArgs[0] === "serve" && !isNextjs) {
     startArgs = ["serve", deployDir, "-l", String(port)];
   }
+
+  if (startCmd === "npx" && startArgs[0] === "next" && startArgs[1] === "start") {
+    const nextBin = join(/*turbopackIgnore: true*/ deployDir, "node_modules", ".bin", "next");
+    const nextExe = join(/*turbopackIgnore: true*/ deployDir, "node_modules", ".bin", "next.cmd");
+    if (existsSync(/*turbopackIgnore: true*/ nextBin) || existsSync(/*turbopackIgnore: true*/ nextExe)) {
+      startCmd = nextExe;
+      startArgs = ["start", "-p", String(port)];
+    } else {
+      startCmd = "npx";
+      startArgs = ["next", "start", "-p", String(port)];
+    }
+  }
+
+  const runtimeEnv = loadEnvFile(deployDir);
+  const cwd = resolveStartCwd(marker, deployDir);
+  const env = { ...process.env, ...runtimeEnv, PORT: String(port), NODE_ENV: "production" };
 
   try {
     const child = execa(startCmd, startArgs, {
@@ -150,7 +177,8 @@ async function getOrCreateServer(
     child.on("error", () => runningServers.delete(deploymentId));
     child.on("exit", () => runningServers.delete(deploymentId));
 
-    const timeoutMs = ["java", "dotnet", "cargo", "go", "cabal", "mix", "bundle"].includes(startCmd) ? 30000 : 15000;
+    const isNextServer = marker.type === "nextjs" || (marker.startArgs?.[0] === "next" && marker.startArgs?.[1] === "start");
+    const timeoutMs = isNextServer ? 20000 : ["java", "dotnet", "cargo", "go", "cabal", "mix", "bundle"].includes(startCmd) ? 30000 : 15000;
     const ready = await waitForServer(port, timeoutMs);
     return { port, ready };
   } catch {
@@ -400,6 +428,21 @@ function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean)
         filePath = publicCandidate;
       }
     }
+
+    if (!existsSync(filePath)) {
+      const nextServerAppDir = join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app");
+      if (existsSync(/*turbopackIgnore: true*/ nextServerAppDir)) {
+        const nextAppHtml = join(/*turbopackIgnore: true*/ nextServerAppDir, ...resolvedParts) + ".html";
+        if (existsSync(/*turbopackIgnore: true*/ nextAppHtml)) {
+          filePath = nextAppHtml;
+        } else {
+          const nextAppIndex = join(/*turbopackIgnore: true*/ nextServerAppDir, ...resolvedParts, "index.html");
+          if (existsSync(/*turbopackIgnore: true*/ nextAppIndex)) {
+            filePath = nextAppIndex;
+          }
+        }
+      }
+    }
   }
 
   if (!filePath || !existsSync(filePath)) {
@@ -423,6 +466,7 @@ function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean)
 function findIndexHtml(deployDir: string): string | null {
   const candidates = [
     join(/*turbopackIgnore: true*/ deployDir, "index.html"),
+    join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app", "index.html"),
     join(/*turbopackIgnore: true*/ deployDir, "server", "app", "index.html"),
     join(/*turbopackIgnore: true*/ deployDir, "public", "index.html"),
   ];
@@ -431,7 +475,7 @@ function findIndexHtml(deployDir: string): string | null {
     if (existsSync(c)) return c;
   }
 
-  const appDir = join(/*turbopackIgnore: true*/ deployDir, "server", "app");
+  const appDir = join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app");
   if (existsSync(appDir)) {
     const items = readdirSync(appDir).filter((f) => f.endsWith(".html"));
     if (items.length === 1) return join(/*turbopackIgnore: true*/ appDir, items[0]);
@@ -572,9 +616,12 @@ function detectSpa(deployDir: string): boolean {
   if (existsSync(join(/*turbopackIgnore: true*/ deployDir, ".grob-server"))) {
     try {
       const marker = JSON.parse(readFileSync(join(/*turbopackIgnore: true*/ deployDir, ".grob-server"), "utf-8"));
-      if (marker.type === "static") return true;
+      if (marker.type === "static" || marker.type === "nextjs" || marker.type === "react" || marker.type === "vite") return true;
     } catch {}
   }
+
+  if (existsSync(join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app"))) return true;
+  if (existsSync(join(/*turbopackIgnore: true*/ deployDir, "build"))) return true;
 
   if (
     existsSync(join(/*turbopackIgnore: true*/ deployDir, "package.json"))
@@ -582,7 +629,7 @@ function detectSpa(deployDir: string): boolean {
     try {
       const pkg = JSON.parse(readFileSync(join(/*turbopackIgnore: true*/ deployDir, "package.json"), "utf-8"));
       const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-      if (deps.react || deps.vue || deps.svelte || deps.angular || deps.solid) {
+      if (deps.react || deps.vue || deps.svelte || deps.angular || deps.solid || deps.next || deps.nuxt || deps.gatsby) {
         return true;
       }
     } catch {}
@@ -623,15 +670,56 @@ async function handleRequest(
       marker = JSON.parse(readFileSync(markerPath, "utf-8"));
     } catch {}
 
-    const isServeStatic = marker?.startCmd === "npx" && marker?.startArgs?.[0] === "serve";
-    debugLog(`marker: type=${marker?.type} startCmd=${marker?.startCmd} startArgs=${JSON.stringify(marker?.startArgs)} isServeStatic=${isServeStatic}`);
+    const isNextjs = marker?.type === "nextjs" || existsSync(/*turbopackIgnore: true*/ join(deployDir, ".next", "server", "app"));
+    const isServeStatic = marker?.startCmd === "npx" && marker?.startArgs?.[0] === "serve" && !isNextjs;
+    debugLog(`marker: type=${marker?.type} isNextjs=${isNextjs} startCmd=${marker?.startCmd} isServeStatic=${isServeStatic}`);
 
-    if (isServeStatic) {
+    if (!isNextjs && isServeStatic) {
       const isSpa = detectSpa(deployDir);
       const isSubdomain = isSubdomainRequest(req);
       const basePath = isSubdomain ? "/" : `/p/${slug}`;
       debugLog(`serveStatic: isSpa=${isSpa} isSubdomain=${isSubdomain} basePath="${basePath}"`);
       return serveStatic(deployDir, pathParts, slug, isSpa, basePath);
+    }
+
+    if (isNextjs) {
+      const envFile = join(/*turbopackIgnore: true*/ deployDir, ".env");
+      if (!existsSync(/*turbopackIgnore: true*/ envFile)) {
+        try {
+          const project = await prisma.project.findFirst({
+            where: { deployments: { some: { id: resolved.deploymentId } } },
+            select: { id: true },
+          });
+          if (project) {
+            const envVars = await prisma.envVar.findMany({
+              where: { projectId: project.id },
+              select: { key: true, value: true },
+            });
+            if (envVars.length > 0) {
+              const envContent = envVars.map((v) => `${v.key}=${v.value}`).join("\n") + "\n";
+              writeFileSync(envFile, envContent, "utf-8");
+              debugLog(`Wrote .env with ${envVars.length} vars`);
+            }
+          }
+        } catch (e) {
+          debugLog(`Failed to write .env: ${e}`);
+        }
+      }
+
+      const isApiRoute = pathParts.length > 0 && pathParts[0] === "api";
+
+      if (isApiRoute) {
+        return proxyRequest(req, resolved.deploymentId, pathParts);
+      }
+
+      const isSubdomain = isSubdomainRequest(req);
+      const basePath = isSubdomain ? "/" : `/p/${slug}`;
+      const staticResult = serveStatic(deployDir, pathParts, slug, true, basePath);
+      if (staticResult.status !== 404) {
+        return staticResult;
+      }
+
+      return proxyRequest(req, resolved.deploymentId, pathParts);
     }
 
     return proxyRequest(req, resolved.deploymentId, pathParts);

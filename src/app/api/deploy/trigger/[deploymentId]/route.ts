@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deployBuild, logEntriesToString, type BuildEnvVars } from "@/lib/build";
+import { createNotification } from "@/lib/notifications";
 
 async function startBuild(deploymentId: string, project: {
   name: string;
@@ -59,12 +60,52 @@ async function startBuild(deploymentId: string, project: {
           url: url || "",
         },
       });
+
+      // Create notification for deployment result
+      const deployment2 = await prisma.deployment.findUnique({
+        where: { id: deploymentId },
+        select: { projectId: true, branch: true, commitMsg: true },
+      });
+      if (deployment2) {
+        const project2 = await prisma.project.findUnique({
+          where: { id: deployment2.projectId },
+          select: { userId: true, name: true },
+        });
+        if (project2) {
+          await createNotification(project2.userId, {
+            title: url ? "Deployment succeeded" : "Deployment failed",
+            message: `${project2.name} ${deployment2.branch} ${url ? "deployed successfully" : "build failed"}`,
+            type: url ? "success" : "error",
+            link: `/dashboard/projects/${deployment2.projectId}/deployments`,
+          });
+        }
+      }
     } catch (error) {
       console.error("Build failed:", error);
       await prisma.deployment.update({
         where: { id: deploymentId },
         data: { status: "failed" },
       }).catch(() => {});
+
+      // Create notification for build error
+      const failedDeployment = await prisma.deployment.findUnique({
+        where: { id: deploymentId },
+        select: { projectId: true, branch: true },
+      });
+      if (failedDeployment) {
+        const failedProject = await prisma.project.findUnique({
+          where: { id: failedDeployment.projectId },
+          select: { userId: true, name: true },
+        });
+        if (failedProject) {
+          await createNotification(failedProject.userId, {
+            title: "Build error",
+            message: `${failedProject.name} ${failedDeployment.branch} encountered an error during build`,
+            type: "error",
+            link: `/dashboard/projects/${failedDeployment.projectId}/deployments`,
+          }).catch(() => {});
+        }
+      }
     }
   })();
 }

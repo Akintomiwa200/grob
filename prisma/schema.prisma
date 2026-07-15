@@ -14,7 +14,8 @@ model User {
   emailVerified DateTime?
   password      String?
   image         String?
-  createdAt     DateTime        @default(now())
+  status        String        @default("online")
+  createdAt     DateTime      @default(now())
   updatedAt     DateTime        @updatedAt
   accounts      Account[]
   apiTokens     ApiToken[]
@@ -24,6 +25,7 @@ model User {
   buckets       StorageBucket[]
   tickets       SupportTicket[]
   ticketReplies TicketReply[]   @relation("TicketReplyAuthor")
+  notifications UserNotification[]
 }
 
 model Account {
@@ -104,6 +106,10 @@ model Project {
   workflows      Workflow[]
   workflowRuns   WorkflowRun[]
   images         OptimizedImage[]
+  firewallWaf    FirewallWafRule[]
+  firewallIps    FirewallIpEntry[]
+  firewallDdos   FirewallDdosConfig?
+  integrations   ProjectIntegration[]
 }
 
 model ProjectMember {
@@ -396,4 +402,70 @@ model OptimizedImage {
   project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
+}
+
+model FirewallWafRule {
+  id          String   @id @default(cuid())
+  projectId   String
+  ruleId      String
+  name        String
+  description String   @default("")
+  severity    String   @default("medium")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, ruleId])
+}
+
+model FirewallIpEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String
+  cidr      String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, type, cidr])
+}
+
+model FirewallDdosConfig {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  enabled              Boolean  @default(true)
+  mitigatedAttacks30d  Int      @default(0)
+  peakTrafficBlocked   String   @default("0 Gbps")
+  lastIncidentAt       DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ProjectIntegration {
+  id          String   @id @default(cuid())
+  projectId   String
+  service     String
+  status      String   @default("disconnected")
+  config      String   @default("{}")
+  connectedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, service])
 }

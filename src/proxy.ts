@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PROD_DOMAIN = "grob.app";
 
+const LOCAL_PATHS = [
+  "/api/auth",
+  "/api/deploy",
+  "/api/webhooks",
+  "/api/user",
+  "/login",
+  "/register",
+  "/dashboard",
+  "/_next",
+  "/favicon",
+];
+
 function getSubdomain(host: string): string | null {
   const hostname = host.split(":")[0].toLowerCase();
 
@@ -25,7 +37,11 @@ export function proxy(req: NextRequest) {
 
   if (subdomain) {
     const pathname = req.nextUrl.pathname;
+
+    // Don't rewrite local platform routes
     if (pathname.startsWith("/p/")) return NextResponse.next();
+    if (LOCAL_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
     const url = req.nextUrl.clone();
     url.pathname = `/p/${subdomain}${pathname}`;
     const res = NextResponse.rewrite(url);

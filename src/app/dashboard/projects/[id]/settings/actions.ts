@@ -36,13 +36,24 @@ export async function saveEnvVars(projectId: string, formData: FormData) {
   revalidatePath(`/dashboard/projects/${projectId}/env`);
   revalidatePath(`/dashboard/projects/${projectId}/settings`);
 
-  const latest = await prisma.deployment.findFirst({
+  // Create a new deployment to rebuild with updated env vars
+  const latestDeployment = await prisma.deployment.findFirst({
     where: { projectId },
     orderBy: { createdAt: "desc" },
-    select: { id: true },
+    select: { id: true, branch: true, commitSha: true },
   });
 
-  return { deploymentId: latest?.id ?? null };
+  const newDeployment = await prisma.deployment.create({
+    data: {
+      projectId,
+      status: "building",
+      branch: latestDeployment?.branch || "main",
+      commitSha: latestDeployment?.commitSha || "",
+      commitMsg: "Update environment variables",
+    },
+  });
+
+  return { deploymentId: newDeployment.id };
 }
 
 export async function createWebhook(projectId: string) {

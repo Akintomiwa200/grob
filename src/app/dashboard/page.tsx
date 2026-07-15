@@ -5,14 +5,15 @@ import AddNewButton from "@/components/AddNewButton";
 import ProjectCardMenu from "@/components/ProjectCardMenu";
 import { cleanupDuplicateProjects } from "./projects/new/actions";
 
-function StatusDot({ status }: { status: string }) {
+function StatusDot({ status, size = "sm" }: { status: string; size?: "sm" | "md" }) {
+  const sizeClasses = size === "md" ? "w-3 h-3" : "w-2 h-2";
   if (status === "success")
-    return <span className="w-2 h-2 rounded-full bg-success shrink-0" />;
+    return <span className={`${sizeClasses} rounded-full bg-current shrink-0`} />;
   if (status === "failed")
-    return <span className="w-2 h-2 rounded-full bg-error shrink-0" />;
+    return <span className={`${sizeClasses} rounded-full bg-current shrink-0`} />;
   if (status === "building")
-    return <span className="w-2 h-2 rounded-full bg-signal shrink-0 animate-pulse" />;
-  return <span className="w-2 h-2 rounded-full bg-border shrink-0" />;
+    return <span className={`${sizeClasses} rounded-full bg-current shrink-0 animate-pulse`} />;
+  return <span className={`${sizeClasses} rounded-full bg-current shrink-0`} />;
 }
 
 function formatCount(n: number): string {
@@ -24,6 +25,21 @@ function formatCount(n: number): string {
 function extractRepoName(gitUrl: string): string {
   if (!gitUrl) return "";
   return gitUrl.replace("https://github.com/", "").replace(".git", "");
+}
+
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSecs < 60) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default async function DashboardPage() {
@@ -166,28 +182,56 @@ export default async function DashboardPage() {
 
           {/* Recent Activity */}
           <div>
-            <h2 className="text-sm font-medium mb-4">Recent Activity</h2>
-            <div className="bg-bg/30 border border-border rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-text">Recent Activity</h2>
+              {recentDeployments.length > 0 && (
+                <span className="text-[10px] text-muted px-1.5 py-0.5 rounded border border-border">
+                  {recentDeployments.length} recent
+                </span>
+              )}
+            </div>
+            <div className="bg-bg/30 border border-border rounded-xl divide-y divide-border/50">
               {recentDeployments.length === 0 ? (
-                <p className="text-xs text-muted text-center py-4">
-                  No recent deployments
-                </p>
-              ) : (
-                recentDeployments.map((dep) => (
-                  <div key={dep.id} className="flex items-start gap-2">
-                    <StatusDot status={dep.status} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-text truncate">{dep.project.name}</p>
-                      <p className="text-[10px] text-muted truncate">
-                        {dep.commitMsg || dep.branch} &middot;{" "}
-                        {new Date(dep.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
+                <div className="p-6 text-center">
+                  <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-surface/50 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                ))
+                  <p className="text-xs text-muted">No recent activity</p>
+                </div>
+              ) : (
+                recentDeployments.map((dep) => {
+                  const timeAgo = getTimeAgo(dep.createdAt);
+                  return (
+                    <Link
+                      key={dep.id}
+                      href={`/dashboard/projects/${dep.project.slug || dep.project.name.toLowerCase().replace(/\s/g, "-")}/deployments`}
+                      className="flex items-center gap-3 p-3 hover:bg-surface/30 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        dep.status === "success" 
+                          ? "bg-success/10 text-success" 
+                          : dep.status === "failed" 
+                            ? "bg-error/10 text-error" 
+                            : dep.status === "building"
+                              ? "bg-signal/10 text-signal animate-pulse"
+                              : "bg-surface/50 text-muted"
+                      }`}>
+                        <StatusDot status={dep.status} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-text truncate">{dep.project.name}</p>
+                        <p className="text-[10px] text-muted truncate">
+                          {dep.commitMsg || dep.branch}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-muted flex-shrink-0 whitespace-nowrap">
+                        {timeAgo}
+                      </span>
+                    </Link>
+                  );
+                })
               )}
             </div>
           </div>
@@ -244,9 +288,9 @@ export default async function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {latest ? (
-                          <StatusDot status={latest.status} />
+                          <StatusDot status={latest.status} size="md" />
                         ) : (
-                          <div className="w-2 h-2 rounded-full bg-border" />
+                          <div className="w-3 h-3 rounded-full bg-border" />
                         )}
                         <ProjectCardMenu
                           projectId={project.id}
@@ -275,7 +319,7 @@ export default async function DashboardPage() {
                         <span className="flex items-center gap-1">
                           {latest ? (
                             <>
-                              <StatusDot status={latest.status} />
+                              <StatusDot status={latest.status} size="md" />
                               <span>{latest.branch}</span>
                             </>
                           ) : (

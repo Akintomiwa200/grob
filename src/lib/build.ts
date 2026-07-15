@@ -514,10 +514,8 @@ async function copyNextjsOutput(
       });
       sys(`Next.js runtime installed`);
     } catch {
-      warn(`Failed to install next — falling back to static serve`);
-      writeServerMarker(deployPath, "nextjs", "npx", ["serve", "."], ".", 3000);
+      warn(`Failed to install next — will try npx next start`);
 
-      // Create _next symlink even for static fallback
       const nextSrcFallback = join(/*turbopackIgnore: true*/ deployPath, ".next");
       const nextLinkFallback = join(/*turbopackIgnore: true*/ deployPath, "_next");
       if (existsSync(nextSrcFallback) && !existsSync(nextLinkFallback)) {
@@ -529,7 +527,8 @@ async function copyNextjsOutput(
         }
       }
 
-      ok(`Next.js build output copied`);
+      writeServerMarker(deployPath, "nextjs", "npx", ["next", "start"], ".", 3000);
+      ok(`Next.js build output copied (will use npx next start)`);
       return;
     }
 
