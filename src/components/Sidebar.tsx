@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Sidebar — dashboard navigation
- *
- * Matches the reference layout: workspace switcher, search, grouped nav
- * with icons/badges/disclosure chevrons, and an account row pinned to
- * the bottom. Active state is derived from the current pathname.
- *
- * Dependencies: lucide-react
- */
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
@@ -45,6 +35,7 @@ import {
   Settings,
   User as UserIcon,
   Plus,
+  X,
 } from "lucide-react";
 
 type NavItem = {
@@ -134,8 +125,15 @@ type SidebarUser = {
   plan?: string;
 };
 
-export default function Sidebar({ user }: { user: SidebarUser }) {
-  const pathname = usePathname();
+function SidebarNav({
+  user,
+  pathname,
+  onNavigate,
+}: {
+  user: SidebarUser;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -169,46 +167,46 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
   const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
 
   return (
-    <aside className="hidden md:flex w-64 flex-col border-r border-[#212633] bg-[#0B0E14] text-[#E7E9EE]">
+    <>
       {/* Workspace switcher */}
       <div className="relative" ref={switcherRef}>
         <button
           type="button"
           onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-          className="flex h-14 w-full items-center gap-2 border-b border-[#212633] px-4 text-left hover:bg-white/[0.03]"
+          className="flex h-14 w-full items-center gap-2 border-b border-border px-4 text-left hover:bg-white/[0.03]"
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-semibold text-white">
             {initial}
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
             {user.name || "Account"}
           </span>
-          <span className="rounded-full border border-[#212633] bg-[#12151D] px-2 py-0.5 text-[11px] font-medium text-[#8B92A4]">
+          <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-muted">
             {user.plan ?? "Hobby"}
           </span>
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#8B92A4]" />
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted" />
         </button>
 
         {isSwitcherOpen && (
-          <div className="absolute top-full left-0 right-0 z-50 border-b border-[#212633] bg-[#12151D] p-1 shadow-2xl">
+          <div className="absolute top-full left-0 right-0 z-50 border-b border-border bg-surface p-1 shadow-2xl">
             <div className="px-3 py-2 mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-[#8B92A4] font-medium">Account</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted font-medium">Account</p>
             </div>
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/[0.05]">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6E5BFF] to-[#8F7CFF] text-xs font-semibold text-white">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-semibold text-white">
                 {initial}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#E7E9EE] truncate">{user.name || "Account"}</p>
-                <p className="text-xs text-[#8B92A4] truncate">{user.email}</p>
+                <p className="text-sm font-medium text-text truncate">{user.name || "Account"}</p>
+                <p className="text-xs text-muted truncate">{user.email}</p>
               </div>
-              <CheckCircle2 className="h-4 w-4 text-[#6E5BFF] shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
             </div>
-            <div className="my-1 border-t border-[#212633]" />
+            <div className="my-1 border-t border-border" />
             <Link
               href="/login"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
-              onClick={() => setIsSwitcherOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-white/[0.05] hover:text-text transition-colors"
+              onClick={() => { setIsSwitcherOpen(false); onNavigate?.(); }}
             >
               <Plus className="h-4 w-4" />
               Add account
@@ -221,11 +219,11 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
       <div className="p-3">
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded-lg border border-[#212633] bg-[#12151D] px-3 py-2 text-sm text-[#8B92A4] hover:border-[#2C3140]"
+          className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted hover:border-border/80"
         >
           <Search className="h-4 w-4" strokeWidth={1.75} />
           <span className="flex-1 text-left">Find…</span>
-          <kbd className="rounded border border-[#212633] bg-[#0B0E14] px-1.5 py-0.5 font-mono text-[11px] text-[#8B92A4]">
+          <kbd className="rounded border border-border bg-bg px-1.5 py-0.5 font-mono text-[11px] text-muted">
             F
           </kbd>
         </button>
@@ -250,10 +248,11 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
                   <Link
                     key={item.href}
                     href={href}
+                    onClick={onNavigate}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-sm transition-colors ${
                       active
-                        ? "bg-white/[0.08] font-medium text-[#E7E9EE]"
-                        : "text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE]"
+                        ? "bg-white/[0.08] font-medium text-text"
+                        : "text-muted hover:bg-white/[0.05] hover:text-text"
                     }`}
                   >
                     <item.icon
@@ -262,62 +261,61 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
                     />
                     <span className="flex-1 truncate">{label}</span>
                     {item.badge && (
-                      <span className="rounded-full bg-[#6E5BFF]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#8F7CFF]">
+                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
                         {item.badge}
                       </span>
                     )}
-                    {item.chevron && <span className="text-[#8B92A4]">›</span>}
+                    {item.chevron && <span className="text-muted">›</span>}
                   </Link>
                 );
               })}
             </div>
             {i < NAV_GROUPS.length - 1 && (
-              <div className="my-3 h-px bg-[#212633]" />
+              <div className="my-3 h-px bg-border" />
             )}
           </div>
         ))}
       </nav>
 
       {/* Account row */}
-      <div className="flex items-center gap-3 border-t border-[#212633] px-4 py-3 relative" ref={menuRef}>
-        {/* Drop-up Menu */}
+      <div className="flex items-center gap-3 border-t border-border px-4 py-3 relative" ref={menuRef}>
         {isMenuOpen && (
-          <div className="absolute bottom-14 left-4 right-4 rounded-xl border border-[#212633] bg-[#12151D] p-1 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-             <div className="px-3 py-2 border-b border-[#212633] mb-1">
-                <p className="text-sm font-medium text-[#E7E9EE] truncate">{user.name || "Account"}</p>
-                <p className="text-xs text-[#8B92A4] truncate">{user.email}</p>
-             </div>
-             
-             <Link 
-               href="/dashboard/profile"
-               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#E7E9EE] hover:bg-white/[0.05] transition-colors"
-               onClick={() => setIsMenuOpen(false)}
-             >
-               <UserIcon className="h-4 w-4 text-[#8B92A4]" />
-               Profile
-             </Link>
-             
-             <Link 
-               href="/dashboard/settings"
-               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#E7E9EE] hover:bg-white/[0.05] transition-colors"
-               onClick={() => setIsMenuOpen(false)}
-             >
-               <Settings className="h-4 w-4 text-[#8B92A4]" />
-               Settings
-             </Link>
-             
-             <div className="my-1 border-t border-[#212633]" />
-             
-             <button
-               onClick={() => {
-                 setIsMenuOpen(false);
-                 signOut({ callbackUrl: "/" });
-               }}
-               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#FF5F57] hover:bg-[#FF5F57]/10 transition-colors"
-             >
-               <LogOut className="h-4 w-4" />
-               Sign out
-             </button>
+          <div className="absolute bottom-14 left-4 right-4 rounded-xl border border-border bg-surface p-1 shadow-2xl z-50">
+            <div className="px-3 py-2 border-b border-border mb-1">
+              <p className="text-sm font-medium text-text truncate">{user.name || "Account"}</p>
+              <p className="text-xs text-muted truncate">{user.email}</p>
+            </div>
+
+            <Link
+              href="/dashboard/profile"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text hover:bg-white/[0.05] transition-colors"
+              onClick={() => { setIsMenuOpen(false); onNavigate?.(); }}
+            >
+              <UserIcon className="h-4 w-4 text-muted" />
+              Profile
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text hover:bg-white/[0.05] transition-colors"
+              onClick={() => { setIsMenuOpen(false); onNavigate?.(); }}
+            >
+              <Settings className="h-4 w-4 text-muted" />
+              Settings
+            </Link>
+
+            <div className="my-1 border-t border-border" />
+
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                signOut({ callbackUrl: "/" });
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-error hover:bg-error/10 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
           </div>
         )}
 
@@ -325,29 +323,140 @@ export default function Sidebar({ user }: { user: SidebarUser }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.image} alt="" className="h-7 w-7 rounded-full" />
         ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5FA2] to-[#6E5BFF] text-xs font-semibold text-white">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-semibold text-white">
             {initial}
           </span>
         )}
-        <span className="flex-1 truncate text-sm text-[#E7E9EE]">
+        <span className="flex-1 truncate text-sm text-text">
           {user.name || user.email || "Account"}
         </span>
         <button
           type="button"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="More options"
-          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
+          className="rounded-md p-1 text-muted hover:bg-white/[0.05] hover:text-text transition-colors"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
         <button
           type="button"
           aria-label="Notifications"
-          className="rounded-md p-1 text-[#8B92A4] hover:bg-white/[0.05] hover:text-[#E7E9EE] transition-colors"
+          className="rounded-md p-1 text-muted hover:bg-white/[0.05] hover:text-text transition-colors"
         >
           <Bell className="h-4 w-4" />
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export default function Sidebar({
+  user,
+  mobileOpen,
+  onMobileClose,
+}: {
+  user: SidebarUser;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-bg text-text shrink-0">
+        <SidebarNav user={user} pathname={pathname} />
+      </aside>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onMobileClose}
+          />
+
+          {/* Drawer panel */}
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-bg text-text" style={{ animation: "slideInLeft 200ms ease-out" }}>
+            {/* Close button */}
+            <div className="flex h-14 items-center justify-between border-b border-border px-4">
+              <span className="text-sm font-semibold text-text">Menu</span>
+              <button
+                type="button"
+                onClick={onMobileClose}
+                className="rounded-md p-1.5 text-muted hover:bg-white/[0.05] hover:text-text transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <SidebarNav
+              user={user}
+              pathname={pathname}
+              onNavigate={onMobileClose}
+            />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function SidebarToggle({
+  onClick,
+  isOpen,
+}: {
+  onClick: () => void;
+  isOpen: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-white/[0.05] transition-colors md:hidden"
+      aria-label="Toggle menu"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <line
+          x1="0" y1="3" x2="18" y2="3"
+          stroke="var(--text)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          style={{
+            transition: "all 300ms cubic-bezier(0.4,0,0.2,1)",
+            transformOrigin: "center",
+            transform: isOpen ? "translate(0, 6px) rotate(45deg)" : "none",
+          }}
+        />
+        <line
+          x1="0" y1="9" x2="18" y2="9"
+          stroke="var(--text)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          style={{
+            transition: "all 300ms cubic-bezier(0.4,0,0.2,1)",
+            opacity: isOpen ? 0 : 1,
+          }}
+        />
+        <line
+          x1="0" y1="15" x2="18" y2="15"
+          stroke="var(--text)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          style={{
+            transition: "all 300ms cubic-bezier(0.4,0,0.2,1)",
+            transformOrigin: "center",
+            transform: isOpen ? "translate(0, -6px) rotate(-45deg)" : "none",
+          }}
+        />
+      </svg>
+    </button>
   );
 }

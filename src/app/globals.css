@@ -107,3 +107,8 @@ body {
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
