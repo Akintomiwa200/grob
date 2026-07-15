@@ -98,6 +98,12 @@ model Project {
   cdnRules       CdnCacheRule[]
   cdnEdgeConfig  CdnEdgeConfig?
   cdnPurgeLogs   CdnPurgeLog[]
+  aiRoutes       AiGatewayRoute[]
+  aiKeys         AiGatewayKey[]
+  aiLogs         AiGatewayLog[]
+  workflows      Workflow[]
+  workflowRuns   WorkflowRun[]
+  images         OptimizedImage[]
 }
 
 model ProjectMember {
@@ -286,4 +292,108 @@ model CdnPurgeLog {
   status    String   @default("completed")
   createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AiGatewayRoute {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  path        String
+  model       String
+  provider    String
+  rateLimit   Int      @default(1000)
+  enabled     Boolean  @default(true)
+  cacheTtl    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logs        AiGatewayLog[]
+
+  @@unique([projectId, path])
+}
+
+model AiGatewayKey {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  key       String
+  active    Boolean  @default(true)
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
+}
+
+model AiGatewayLog {
+  id           String   @id @default(cuid())
+  projectId    String
+  routeId      String
+  method       String   @default("POST")
+  path         String
+  statusCode   Int      @default(200)
+  latencyMs    Int      @default(0)
+  tokensIn     Int      @default(0)
+  tokensOut    Int      @default(0)
+  model        String
+  provider     String
+  cached       Boolean  @default(false)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  route        AiGatewayRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  trigger     String   @default("push")
+  branch      String   @default("main")
+  active      Boolean  @default(true)
+  steps       String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runs        WorkflowRun[]
+}
+
+model WorkflowRun {
+  id          String   @id @default(cuid())
+  workflowId  String
+  projectId   String
+  status      String   @default("pending")
+  branch      String   @default("main")
+  commitSha   String   @default("")
+  commitMsg   String   @default("")
+  duration    Int?
+  logs        String   @default("")
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId, startedAt])
+}
+
+model OptimizedImage {
+  id             String   @id @default(cuid())
+  projectId      String
+  name           String
+  url            String
+  originalSize   Int
+  optimizedSize  Int
+  width          Int
+  height         Int
+  format         String   @default("webp")
+  originalFormat String   @default("png")
+  accessCount    Int      @default(0)
+  lastAccessedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
 }

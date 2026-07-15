@@ -61,7 +61,7 @@ function getPort(deploymentId: string): number {
 }
 
 function loadEnvFile(deployDir: string): Record<string, string> {
-  const envFile = join(deployDir, ".env");
+  const envFile = join(/*turbopackIgnore: true*/ deployDir, ".env");
   const env: Record<string, string> = {};
   if (existsSync(envFile)) {
     const content = readFileSync(envFile, "utf-8");
@@ -97,7 +97,7 @@ async function waitForServer(port: number, timeoutMs: number): Promise<boolean> 
 function resolveStartCwd(marker: ServerMarker, deployDir: string): string {
   if (!marker.startCwd || marker.startCwd === ".") return deployDir;
   if (marker.startCwd.startsWith("/")) return marker.startCwd;
-  return join(deployDir, marker.startCwd);
+  return join(/*turbopackIgnore: true*/ deployDir, marker.startCwd);
 }
 
 function interpolatePort(args: string[], port: number): string[] {
@@ -112,7 +112,7 @@ async function getOrCreateServer(
   deploymentId: string,
   deployDir: string,
 ): Promise<{ port: number; ready: boolean }> {
-  const markerPath = join(deployDir, ".grob-server");
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
   if (!existsSync(markerPath)) return { port: 0, ready: false };
 
   const existing = runningServers.get(deploymentId);
@@ -163,13 +163,13 @@ async function proxyRequest(
   deploymentId: string,
   pathParts: string[],
 ): Promise<Response> {
-  const deployDir = join(process.cwd(), "deployments-data", deploymentId);
-  if (!existsSync(deployDir)) {
+  const deployDir = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", deploymentId);
+  if (!existsSync(/*turbopackIgnore: true*/ deployDir)) {
     return new Response("Deployment not found", { status: 404 });
   }
 
-  const markerPath = join(deployDir, ".grob-server");
-  if (!existsSync(markerPath)) {
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
+  if (!existsSync(/*turbopackIgnore: true*/ markerPath)) {
     return new Response("Not a server deployment", { status: 404 });
   }
 
@@ -309,104 +309,132 @@ function rewriteSvgPaths(svg: string, basePath: string): string {
   );
 }
 
+function debugLog(msg: string) {
+  console.error(`[GROB-DEBUG ${new Date().toISOString()}] ${msg}`);
+}
+
 function resolveFilePath(deployDir: string, pathParts: string[], isSpa: boolean): { file: string | null; isIndexFallback: boolean } {
-  let filePath: string;
+  let filePath: string | null = null;
+  const pathStr = pathParts.join("/");
+
+  function spaFallback(): { file: string | null; isIndexFallback: boolean } {
+    if (isSpa) {
+      const fallback = findIndexHtml(deployDir);
+      debugLog(`spaFallback: fallback=${fallback}`);
+      if (fallback) return { file: fallback, isIndexFallback: true };
+    }
+    debugLog(`spaFallback: returning null`);
+    return { file: null, isIndexFallback: false };
+  }
 
   if (pathParts.length === 0) {
     let baseDir = deployDir;
-    const nextAppDir = join(deployDir, "server", "app");
-    const nextAppDirNew = join(deployDir, ".next", "server", "app");
+    const nextAppDir = join(/*turbopackIgnore: true*/ deployDir, "server", "app");
+    const nextAppDirNew = join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app");
     if (existsSync(nextAppDir)) {
       baseDir = nextAppDir;
     } else if (existsSync(nextAppDirNew)) {
       baseDir = nextAppDirNew;
     }
 
-    filePath = join(baseDir, "index.html");
-    if (!existsSync(filePath)) {
+    filePath = join(/*turbopackIgnore: true*/ baseDir, "index.html");
+    if (!existsSync(/*turbopackIgnore: true*/ filePath)) {
       const items = readdirSync(baseDir).filter(
         (f) => f !== "." && f !== ".." && !f.startsWith(".") && f !== "node_modules",
       );
       if (items.length === 1) {
-        const candidate = join(baseDir, items[0]);
+        const candidate = join(/*turbopackIgnore: true*/ baseDir, items[0]);
         if (lstatSync(candidate).isDirectory()) {
-          const nestedIndex = join(candidate, "index.html");
+          const nestedIndex = join(/*turbopackIgnore: true*/ candidate, "index.html");
           if (existsSync(nestedIndex)) {
             filePath = nestedIndex;
           } else {
-            filePath = join(baseDir, items[0], "index.html");
+            filePath = join(/*turbopackIgnore: true*/ baseDir, items[0], "index.html");
           }
         } else {
           filePath = candidate;
         }
       } else if (items.includes("index.html")) {
-        filePath = join(baseDir, "index.html");
+        filePath = join(/*turbopackIgnore: true*/ baseDir, "index.html");
       } else {
-        if (isSpa) {
-          const fallback = findIndexHtml(deployDir);
-          if (fallback) return { file: fallback, isIndexFallback: true };
-        }
-        return { file: null, isIndexFallback: false };
+        return spaFallback();
       }
     }
   } else {
     let resolvedParts = pathParts;
+
     if (pathParts[0] === "_next" && pathParts.length >= 2) {
-      const subdir = pathParts[1];
-      const candidate = join(deployDir, subdir, ...pathParts.slice(2));
-      if (existsSync(candidate)) {
-        resolvedParts = [subdir, ...pathParts.slice(2)];
+      const nextMapped = join(/*turbopackIgnore: true*/ deployDir, ".next", ...pathParts.slice(1));
+      const directAccess = join(/*turbopackIgnore: true*/ deployDir, "_next", ...pathParts.slice(1));
+      debugLog(`_next mapping: path="${pathStr}" nextMapped="${nextMapped}" exists=${existsSync(nextMapped)} directAccess="${directAccess}" exists=${existsSync(directAccess)}`);
+      if (existsSync(nextMapped)) {
+        filePath = nextMapped;
+        resolvedParts = [".next", ...pathParts.slice(1)];
+      } else if (existsSync(directAccess)) {
+        filePath = directAccess;
+        resolvedParts = ["_next", ...pathParts.slice(1)];
+      } else {
+        const subdir = pathParts[1];
+        const candidate = join(/*turbopackIgnore: true*/ deployDir, subdir, ...pathParts.slice(2));
+        debugLog(`_next fallback: subdir="${subdir}" candidate="${candidate}" exists=${existsSync(candidate)}`);
+        if (existsSync(candidate)) {
+          resolvedParts = [subdir, ...pathParts.slice(2)];
+        }
       }
     }
-    filePath = join(deployDir, ...resolvedParts);
+
+    if (!filePath) {
+      filePath = join(/*turbopackIgnore: true*/ deployDir, ...resolvedParts);
+    }
 
     if (!existsSync(filePath)) {
-      const nextCandidate = join(deployDir, ".next", ...resolvedParts);
+      const nextCandidate = join(/*turbopackIgnore: true*/ deployDir, ".next", ...resolvedParts.filter((p) => p !== ".next" && p !== "_next"));
       if (existsSync(nextCandidate)) {
         filePath = nextCandidate;
       }
     }
+
+    if (!existsSync(filePath)) {
+      const publicCandidate = join(/*turbopackIgnore: true*/ deployDir, "public", ...resolvedParts);
+      if (existsSync(publicCandidate)) {
+        filePath = publicCandidate;
+      }
+    }
   }
 
-  if (!existsSync(filePath)) {
-    if (isSpa) {
-      const fallback = findIndexHtml(deployDir);
-      if (fallback) return { file: fallback, isIndexFallback: true };
-    }
-    return { file: null, isIndexFallback: false };
+  if (!filePath || !existsSync(filePath)) {
+    debugLog(`resolveFilePath: NOT FOUND path="${pathStr}" finalPath="${filePath}"`);
+    return spaFallback();
   }
 
   if (lstatSync(filePath).isDirectory()) {
-    const dirIndex = join(filePath, "index.html");
+    const dirIndex = join(/*turbopackIgnore: true*/ filePath, "index.html");
     if (existsSync(dirIndex)) {
       filePath = dirIndex;
     } else {
-      if (isSpa) {
-        const fallback = findIndexHtml(deployDir);
-        if (fallback) return { file: fallback, isIndexFallback: true };
-      }
-      return { file: null, isIndexFallback: false };
+      return spaFallback();
     }
   }
 
+  debugLog(`resolveFilePath: FOUND path="${pathStr}" file="${filePath}"`);
   return { file: filePath, isIndexFallback: false };
 }
 
 function findIndexHtml(deployDir: string): string | null {
   const candidates = [
-    join(deployDir, "index.html"),
-    join(deployDir, "server", "app", "index.html"),
-    join(deployDir, "public", "index.html"),
+    join(/*turbopackIgnore: true*/ deployDir, "index.html"),
+    join(/*turbopackIgnore: true*/ deployDir, "server", "app", "index.html"),
+    join(/*turbopackIgnore: true*/ deployDir, "public", "index.html"),
   ];
 
   for (const c of candidates) {
     if (existsSync(c)) return c;
   }
 
-  const appDir = join(deployDir, "server", "app");
+  const appDir = join(/*turbopackIgnore: true*/ deployDir, "server", "app");
   if (existsSync(appDir)) {
     const items = readdirSync(appDir).filter((f) => f.endsWith(".html"));
-    if (items.length === 1) return join(appDir, items[0]);
+    if (items.length === 1) return join(/*turbopackIgnore: true*/ appDir, items[0]);
   }
 
   return null;
@@ -419,8 +447,11 @@ function serveStatic(
   isSpa: boolean,
   basePath: string,
 ): Response {
+  const pathStr = pathParts.join("/");
+  debugLog(`serveStatic: path="${pathStr}" deployDir="${deployDir}" basePath="${basePath}"`);
   const { file: filePath, isIndexFallback } = resolveFilePath(deployDir, pathParts, isSpa);
-  if (!filePath) return new Response("Not found", { status: 404 });
+  if (!filePath) { debugLog(`serveStatic: 404 path="${pathStr}"`); return new Response("Not found", { status: 404 }); }
+  debugLog(`serveStatic: serving filePath="${filePath}" isIndexFallback=${isIndexFallback}`);
 
   const ext = extname(filePath).toLowerCase();
   const contentType = MIME[ext] || "application/octet-stream";
@@ -538,18 +569,18 @@ async function resolveSlug(
 }
 
 function detectSpa(deployDir: string): boolean {
-  if (existsSync(join(deployDir, ".grob-server"))) {
+  if (existsSync(join(/*turbopackIgnore: true*/ deployDir, ".grob-server"))) {
     try {
-      const marker = JSON.parse(readFileSync(join(deployDir, ".grob-server"), "utf-8"));
+      const marker = JSON.parse(readFileSync(join(/*turbopackIgnore: true*/ deployDir, ".grob-server"), "utf-8"));
       if (marker.type === "static") return true;
     } catch {}
   }
 
   if (
-    existsSync(join(deployDir, "package.json"))
+    existsSync(join(/*turbopackIgnore: true*/ deployDir, "package.json"))
   ) {
     try {
-      const pkg = JSON.parse(readFileSync(join(deployDir, "package.json"), "utf-8"));
+      const pkg = JSON.parse(readFileSync(join(/*turbopackIgnore: true*/ deployDir, "package.json"), "utf-8"));
       const deps = { ...pkg.dependencies, ...pkg.devDependencies };
       if (deps.react || deps.vue || deps.svelte || deps.angular || deps.solid) {
         return true;
@@ -565,8 +596,12 @@ async function handleRequest(
   slug: string,
   pathParts: string[],
 ): Promise<Response> {
+  const host = req.headers.get("host") || "";
+  const pathStr = pathParts.join("/");
+  debugLog(`REQUEST host="${host}" slug="${slug}" path="${pathStr}" url="${req.url}"`);
+
   const resolved = await resolveSlug(slug);
-  if (!resolved) return notFound();
+  if (!resolved) { debugLog(`resolveSlug: NOT FOUND slug="${slug}"`); return notFound(); }
 
   if ("redirect" in resolved) {
     const location = isSubdomainRequest(req)
@@ -578,10 +613,10 @@ async function handleRequest(
     });
   }
 
-  const deployDir = join(process.cwd(), "deployments-data", resolved.deploymentId);
-  if (!existsSync(deployDir)) return notFound();
+  const deployDir = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", resolved.deploymentId);
+  if (!existsSync(/*turbopackIgnore: true*/ deployDir)) { debugLog(`deployDir NOT EXISTS: ${deployDir}`); return notFound(); }
 
-  const markerPath = join(deployDir, ".grob-server");
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
   if (existsSync(markerPath)) {
     let marker: { type?: string; startCmd?: string; startArgs?: string[] } | null = null;
     try {
@@ -589,21 +624,24 @@ async function handleRequest(
     } catch {}
 
     const isServeStatic = marker?.startCmd === "npx" && marker?.startArgs?.[0] === "serve";
+    debugLog(`marker: type=${marker?.type} startCmd=${marker?.startCmd} startArgs=${JSON.stringify(marker?.startArgs)} isServeStatic=${isServeStatic}`);
+
     if (isServeStatic) {
       const isSpa = detectSpa(deployDir);
       const isSubdomain = isSubdomainRequest(req);
       const basePath = isSubdomain ? "/" : `/p/${slug}`;
+      debugLog(`serveStatic: isSpa=${isSpa} isSubdomain=${isSubdomain} basePath="${basePath}"`);
       return serveStatic(deployDir, pathParts, slug, isSpa, basePath);
     }
 
     return proxyRequest(req, resolved.deploymentId, pathParts);
   }
 
-  const nextAppDir = join(deployDir, "server", "app");
-  const nextAppDirNew = join(deployDir, ".next", "server", "app");
+  const nextAppDir = join(/*turbopackIgnore: true*/ deployDir, "server", "app");
+  const nextAppDirNew = join(/*turbopackIgnore: true*/ deployDir, ".next", "server", "app");
   const activeNextAppDir = existsSync(nextAppDir) ? nextAppDir : existsSync(nextAppDirNew) ? nextAppDirNew : null;
   if (pathParts.length > 0 && activeNextAppDir) {
-    const subPageFile = join(activeNextAppDir, ...pathParts) + ".html";
+    const subPageFile = join(/*turbopackIgnore: true*/ activeNextAppDir, ...pathParts) + ".html";
     if (existsSync(subPageFile)) {
       const contentType = MIME[".html"];
       const content = readFileSync(subPageFile).toString("utf-8");
@@ -614,7 +652,7 @@ async function handleRequest(
       });
     }
 
-    const subPageRsc = join(activeNextAppDir, ...pathParts) + ".rsc";
+    const subPageRsc = join(/*turbopackIgnore: true*/ activeNextAppDir, ...pathParts) + ".rsc";
     if (existsSync(subPageRsc)) {
       const content = readFileSync(subPageRsc).toString("utf-8");
       return new Response(content, {

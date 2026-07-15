@@ -46,7 +46,7 @@ function getPort(deploymentId: string): number {
 }
 
 function loadEnvFile(deployDir: string): Record<string, string> {
-  const envFile = join(deployDir, ".env");
+  const envFile = join(/*turbopackIgnore: true*/ deployDir, ".env");
   const env: Record<string, string> = {};
   if (existsSync(envFile)) {
     const content = readFileSync(envFile, "utf-8");
@@ -82,7 +82,7 @@ async function waitForServer(port: number, timeoutMs: number): Promise<boolean> 
 function resolveStartCwd(marker: ServerMarker, deployDir: string): string {
   if (!marker.startCwd || marker.startCwd === ".") return deployDir;
   if (marker.startCwd.startsWith("/")) return marker.startCwd;
-  return join(deployDir, marker.startCwd);
+  return join(/*turbopackIgnore: true*/ deployDir, marker.startCwd);
 }
 
 function interpolatePort(args: string[], port: number): string[] {
@@ -98,7 +98,7 @@ async function getOrCreateServer(
   deploymentId: string,
   deployDir: string,
 ): Promise<{ port: number; ready: boolean }> {
-  const markerPath = join(deployDir, ".grob-server");
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
   if (!existsSync(markerPath)) return { port: 0, ready: false };
 
   const existing = runningServers.get(deploymentId);
@@ -152,12 +152,12 @@ async function proxyRequest(
   deploymentId: string,
   pathParts: string[],
 ): Promise<Response> {
-  const deployDir = join(process.cwd(), "deployments-data", deploymentId);
+  const deployDir = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", deploymentId);
   if (!existsSync(deployDir)) {
     return new Response("Deployment not found", { status: 404 });
   }
 
-  const markerPath = join(deployDir, ".grob-server");
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
   if (!existsSync(markerPath)) {
     return new Response("Not a server deployment", { status: 404 });
   }
@@ -206,14 +206,14 @@ export async function GET(
   }
 
   const [deploymentId, ...pathParts] = slug;
-  const deployDir = join(process.cwd(), "deployments-data", deploymentId);
+  const deployDir = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", deploymentId);
 
   if (!existsSync(deployDir)) {
     return new Response("Deployment not found", { status: 404 });
   }
 
   // Server deployment — proxy to running process
-  const markerPath = join(deployDir, ".grob-server");
+  const markerPath = join(/*turbopackIgnore: true*/ deployDir, ".grob-server");
   if (existsSync(markerPath)) {
     return proxyRequest(_req, deploymentId, pathParts);
   }
@@ -221,35 +221,35 @@ export async function GET(
   // Static file serving
   let filePath: string;
   if (pathParts.length === 0) {
-    filePath = join(deployDir, "index.html");
+    filePath = join(/*turbopackIgnore: true*/ deployDir, "index.html");
     if (!existsSync(filePath)) {
       const items = readdirSync(deployDir).filter(
         (f) => f !== "." && f !== ".." && !f.startsWith(".") && f !== "node_modules",
       );
       if (items.length === 1) {
-        const candidate = join(deployDir, items[0]);
+        const candidate = join(/*turbopackIgnore: true*/ deployDir, items[0]);
         if (lstatSync(candidate).isDirectory()) {
-          const nestedIndex = join(candidate, "index.html");
+          const nestedIndex = join(/*turbopackIgnore: true*/ candidate, "index.html");
           if (existsSync(nestedIndex)) {
             filePath = nestedIndex;
           } else {
-            filePath = join(deployDir, items[0], pathParts.join("/"));
+            filePath = join(/*turbopackIgnore: true*/ deployDir, items[0], pathParts.join("/"));
           }
         } else {
           filePath = candidate;
         }
       } else if (items.includes("index.html")) {
-        filePath = join(deployDir, "index.html");
+        filePath = join(/*turbopackIgnore: true*/ deployDir, "index.html");
       } else {
-        filePath = join(deployDir, pathParts.join("/"));
+        filePath = join(/*turbopackIgnore: true*/ deployDir, pathParts.join("/"));
       }
     }
   } else {
-    filePath = join(deployDir, ...pathParts);
+    filePath = join(/*turbopackIgnore: true*/ deployDir, ...pathParts);
   }
 
   if (!existsSync(filePath) || lstatSync(filePath).isDirectory()) {
-    const dirIndex = join(filePath, "index.html");
+    const dirIndex = join(/*turbopackIgnore: true*/ filePath, "index.html");
     if (existsSync(dirIndex)) {
       filePath = dirIndex;
     } else {

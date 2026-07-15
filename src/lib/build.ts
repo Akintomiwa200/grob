@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from "fs";
+import { mkdirSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync, symlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { execa } from "execa";
@@ -34,7 +34,7 @@ function collectFiles(dir: string, prefix = "", results: string[] = []): string[
     const entries = readdirSync(dir);
     for (const entry of entries) {
       if (entry === "node_modules" || entry === ".git" || entry.startsWith(".")) continue;
-      const full = join(dir, entry);
+      const full = join(/*turbopackIgnore: true*/ dir, entry);
       const rel = prefix ? `${prefix}/${entry}` : entry;
       try {
         if (statSync(full).isDirectory()) {
@@ -117,7 +117,7 @@ function writeDeploymentHtml(
   framework: string,
   timestamp: string,
 ) {
-  const dir = join(process.cwd(), "deployments-data", deploymentId);
+  const dir = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", deploymentId);
   mkdirSync(dir, { recursive: true });
 
   const buildTime = new Date().toISOString();
@@ -195,7 +195,7 @@ function writeDeploymentHtml(
 </body>
 </html>`;
 
-  writeFileSync(join(dir, "index.html"), html, "utf-8");
+  writeFileSync(join(/*turbopackIgnore: true*/ dir, "index.html"), html, "utf-8");
 }
 
 function writeServerMarker(
@@ -214,7 +214,7 @@ function writeServerMarker(
     startCwd,
     port,
   };
-  writeFileSync(join(deployPath, ".grob-server"), JSON.stringify(marker), "utf-8");
+  writeFileSync(join(/*turbopackIgnore: true*/ deployPath, ".grob-server"), JSON.stringify(marker), "utf-8");
 }
 
 export async function deployBuild(
@@ -252,7 +252,7 @@ export async function deployBuild(
     const hasGitUrl = project.gitUrl && project.gitUrl.trim().length > 0;
 
     if (hasGitUrl) {
-      workDir = join(tmpdir(), `grob-build-${deploymentId}`);
+      workDir = join(/*turbopackIgnore: true*/ tmpdir(), `grob-build-${deploymentId}`);
       mkdirSync(workDir, { recursive: true });
 
       sys(`Cloning ${project.gitUrl}...`);
@@ -271,7 +271,7 @@ export async function deployBuild(
     }
 
     const runDir = workDir || process.cwd();
-    const deployPath = join(process.cwd(), "deployments-data", deploymentId);
+    const deployPath = join(/*turbopackIgnore: true*/ process.cwd(), "deployments-data", deploymentId);
     mkdirSync(deployPath, { recursive: true });
 
     if (hasGitUrl) {
@@ -431,23 +431,23 @@ async function copyNextjsOutput(
   info: (t: string) => void,
   warn: (t: string) => void,
 ) {
-  const nextStandalone = join(runDir, ".next", "standalone", "server.js");
+  const nextStandalone = join(/*turbopackIgnore: true*/ runDir, ".next", "standalone", "server.js");
 
   if (existsSync(nextStandalone)) {
     sys(`Detected Next.js standalone mode — copying server output...`);
 
-    const standaloneDir = join(runDir, ".next", "standalone");
+    const standaloneDir = join(/*turbopackIgnore: true*/ runDir, ".next", "standalone");
     cpSync(standaloneDir, deployPath, { recursive: true });
 
-    const staticSrc = join(runDir, ".next", "static");
-    const staticDest = join(deployPath, ".next", "static");
+    const staticSrc = join(/*turbopackIgnore: true*/ runDir, ".next", "static");
+    const staticDest = join(/*turbopackIgnore: true*/ deployPath, ".next", "static");
     if (existsSync(staticSrc)) {
       mkdirSync(staticDest, { recursive: true });
       cpSync(staticSrc, staticDest, { recursive: true });
     }
 
-    const publicSrc = join(runDir, "public");
-    const publicDest = join(deployPath, "public");
+    const publicSrc = join(/*turbopackIgnore: true*/ runDir, "public");
+    const publicDest = join(/*turbopackIgnore: true*/ deployPath, "public");
     if (existsSync(publicSrc)) {
       mkdirSync(publicDest, { recursive: true });
       cpSync(publicSrc, publicDest, { recursive: true });
@@ -455,28 +455,53 @@ async function copyNextjsOutput(
 
     writeRuntimeEnv(deployPath, envVars);
     writeServerMarker(deployPath, "nextjs-standalone", "node", ["server.js"], ".", 3000);
+
+    // Create _next symlink for static file resolution
+    const nextSrc = join(/*turbopackIgnore: true*/ deployPath, ".next");
+    const nextLink = join(/*turbopackIgnore: true*/ deployPath, "_next");
+    if (existsSync(nextSrc) && !existsSync(nextLink)) {
+      try {
+        symlinkSync(nextSrc, nextLink);
+        sys(`Created _next symlink for static file resolution`);
+      } catch {
+        warn(`Failed to create _next symlink — static files may not resolve`);
+      }
+    }
+
     ok(`Next.js standalone server copied`);
     info(`Server will be started on first request`);
   } else {
     sys(`Detected Next.js output — copying build output...`);
 
-    const nextDest = join(deployPath, ".next");
-    const nextOutput = join(runDir, ".next");
+    const nextDest = join(/*turbopackIgnore: true*/ deployPath, ".next");
+    const nextOutput = join(/*turbopackIgnore: true*/ runDir, ".next");
     if (existsSync(nextOutput)) {
       cpSync(nextOutput, nextDest, { recursive: true });
     }
 
-    const publicSrc = join(runDir, "public");
+    const publicSrc = join(/*turbopackIgnore: true*/ runDir, "public");
     if (existsSync(publicSrc)) {
-      cpSync(publicSrc, join(deployPath, "public"), { recursive: true });
+      cpSync(publicSrc, join(/*turbopackIgnore: true*/ deployPath, "public"), { recursive: true });
     }
 
-    const pkgSrc = join(runDir, "package.json");
+    const pkgSrc = join(/*turbopackIgnore: true*/ runDir, "package.json");
     if (existsSync(pkgSrc)) {
-      cpSync(pkgSrc, join(deployPath, "package.json"));
+      cpSync(pkgSrc, join(/*turbopackIgnore: true*/ deployPath, "package.json"));
     }
 
     writeRuntimeEnv(deployPath, envVars);
+
+    // Create _next symlink so static files resolve via any server
+    const nextSrc = join(/*turbopackIgnore: true*/ deployPath, ".next");
+    const nextLink = join(/*turbopackIgnore: true*/ deployPath, "_next");
+    if (existsSync(nextSrc) && !existsSync(nextLink)) {
+      try {
+        symlinkSync(nextSrc, nextLink);
+        sys(`Created _next symlink for static file resolution`);
+      } catch {
+        warn(`Failed to create _next symlink — static files may not resolve`);
+      }
+    }
 
     sys(`Installing next runtime...`);
     try {
@@ -491,6 +516,19 @@ async function copyNextjsOutput(
     } catch {
       warn(`Failed to install next — falling back to static serve`);
       writeServerMarker(deployPath, "nextjs", "npx", ["serve", "."], ".", 3000);
+
+      // Create _next symlink even for static fallback
+      const nextSrcFallback = join(/*turbopackIgnore: true*/ deployPath, ".next");
+      const nextLinkFallback = join(/*turbopackIgnore: true*/ deployPath, "_next");
+      if (existsSync(nextSrcFallback) && !existsSync(nextLinkFallback)) {
+        try {
+          symlinkSync(nextSrcFallback, nextLinkFallback);
+          sys(`Created _next symlink for static file resolution`);
+        } catch {
+          warn(`Failed to create _next symlink — static files may not resolve`);
+        }
+      }
+
       ok(`Next.js build output copied`);
       return;
     }
@@ -513,7 +551,7 @@ async function copyGenericOutput(
   warn: (t: string) => void,
   langId: string,
 ) {
-  const outputPath = join(runDir, outputDir);
+  const outputPath = join(/*turbopackIgnore: true*/ runDir, outputDir);
 
   if (existsSync(outputPath)) {
     cpSync(outputPath, deployPath, { recursive: true });
@@ -523,9 +561,9 @@ async function copyGenericOutput(
     const candidates = ["dist", "build", "out", "public", "_site", "target/release", "target"];
     let found = false;
     for (const candidate of candidates) {
-      const src = join(runDir, candidate);
+      const src = join(/*turbopackIgnore: true*/ runDir, candidate);
       if (existsSync(src) && statSync(src).isDirectory()) {
-        cpSync(src, join(deployPath, candidate), { recursive: true });
+        cpSync(src, join(/*turbopackIgnore: true*/ deployPath, candidate), { recursive: true });
         ok(`Copied output from ${candidate}`);
         found = true;
         break;
@@ -537,9 +575,9 @@ async function copyGenericOutput(
         (e) => !["node_modules", ".git", ".next"].includes(e) && !e.startsWith("."),
       );
       for (const entry of entries) {
-        const src = join(runDir, entry);
+        const src = join(/*turbopackIgnore: true*/ runDir, entry);
         try {
-          cpSync(src, join(deployPath, entry), { recursive: true });
+          cpSync(src, join(/*turbopackIgnore: true*/ deployPath, entry), { recursive: true });
         } catch {
           // skip
         }
@@ -549,6 +587,18 @@ async function copyGenericOutput(
   }
 
   writeRuntimeEnv(deployPath, envVars);
+
+  // Create _next symlink for static file resolution (for Next.js-like builds)
+  const nextSrcGeneric = join(/*turbopackIgnore: true*/ deployPath, ".next");
+  const nextLinkGeneric = join(/*turbopackIgnore: true*/ deployPath, "_next");
+  if (existsSync(nextSrcGeneric) && !existsSync(nextLinkGeneric)) {
+    try {
+      symlinkSync(nextSrcGeneric, nextLinkGeneric);
+      sys(`Created _next symlink for static file resolution`);
+    } catch {
+      // not a Next.js build, skip
+    }
+  }
 
   // Build the start command from the language profile
   if (detectedLang) {
@@ -568,7 +618,7 @@ function writeRuntimeEnv(deployPath: string, envVars: BuildEnvVars | undefined) 
     const envContent = Object.entries(envVars.runtime)
       .map(([k, v]) => `${k}=${v}`)
       .join("\n");
-    writeFileSync(join(deployPath, ".env"), envContent, "utf-8");
+    writeFileSync(join(/*turbopackIgnore: true*/ deployPath, ".env"), envContent, "utf-8");
   }
 }
 
