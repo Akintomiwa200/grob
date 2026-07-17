@@ -35,7 +35,7 @@ export default function DashboardClient({
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4 md:hidden">
+        <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:hidden">
           <SidebarToggle onClick={() => setMobileOpen(!mobileOpen)} isOpen={mobileOpen} />
           <Link
             href="/dashboard"

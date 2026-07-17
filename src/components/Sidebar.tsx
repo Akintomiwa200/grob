@@ -271,7 +271,7 @@ function SidebarNav({
               })}
             </div>
             {i < NAV_GROUPS.length - 1 && (
-              <div className="my-3 h-px bg-border" />
+              <div className="my-3" />
             )}
           </div>
         ))}
@@ -364,7 +364,7 @@ export default function Sidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-bg text-text shrink-0">
+      <aside className="hidden md:flex w-64 flex-col bg-bg text-text shrink-0">
         <SidebarNav user={user} pathname={pathname} />
       </aside>
 
@@ -378,7 +378,7 @@ export default function Sidebar({
           />
 
           {/* Drawer panel */}
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-bg text-text" style={{ animation: "slideInLeft 200ms ease-out" }}>
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-bg text-text" style={{ animation: "slideInLeft 200ms ease-out" }}>
             {/* Close button */}
             <div className="flex h-14 items-center justify-between border-b border-border px-4">
               <span className="text-sm font-semibold text-text">Menu</span>

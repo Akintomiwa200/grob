@@ -181,7 +181,7 @@ export default function Navbar({
   const currentStatus = STATUS_OPTIONS.find((s) => s.value === status)!;
 
   return (
-    <header className="hidden h-14 shrink-0 items-center justify-between bg-[#0B0E14] px-6 md:flex">
+    <header className="hidden h-14 shrink-0 items-center justify-between bg-bg px-6 md:flex">
       <div className="flex min-w-0 items-center gap-2 text-sm">
         {/* Project switcher */}
         <div className="relative" ref={switcherRef}>
