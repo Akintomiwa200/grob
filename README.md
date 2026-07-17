@@ -1,12 +1,13 @@
 # Grob
 
-A full-stack deployment platform built with Next.js 16, Prisma, SQLite, and Tailwind CSS. Import a Git repository, and Grob builds, deploys, and serves it from the edge — with zero configuration and zero downtime.
+A full-stack deployment platform built with Next.js 16, Prisma, SQLite, and Tailwind CSS. Deploy any application — frontend, backend, full-stack, or static — from any language or framework. Push your code, and Grob builds, deploys, and serves it with zero configuration.
 
 ## Features
 
 ### Core Platform
-- **GitHub Integration** — Import repos, auto-detect frameworks, register webhooks for auto-deploy on every push
-- **Build Pipeline** — Clone, install, build, and deploy with full build logs streamed live via SSE
+- **GitHub Integration** — Import repos, auto-detect 70+ frameworks, register webhooks for auto-deploy on every push
+- **Multi-Language Build Pipeline** — Clone, install, build, and deploy any language with full build logs streamed live via SSE
+- **Framework Auto-Detection** — Automatically detects your stack from config files and extensions (Next.js, Django, Rails, Spring Boot, Go, Rust, and more)
 - **Instant Rollbacks** — One-click rollback to any previous successful deployment
 - **Live Deploy Logs** — Real-time streaming build output with status indicators
 - **Auto-Deploy Webhooks** — Automatically register webhooks on GitHub repos; every push triggers a deploy
@@ -53,6 +54,148 @@ A full-stack deployment platform built with Next.js 16, Prisma, SQLite, and Tail
 ### Documentation
 - **Interactive Docs** — Full documentation site at `/docs` with search (Ctrl+K)
 - **15 Doc Sections** — Quickstart, frameworks, Git integration, builds, env vars, domains, regions, caching, serverless, storage, AI gateway, firewall, workflows, image optimization
+
+## Supported Frameworks & Languages
+
+Grob supports **70+ frameworks** across **15+ languages** with automatic detection and optimized build configurations.
+
+### JavaScript / TypeScript
+| Framework | Detection |
+|-----------|-----------|
+| Next.js (+ Static Export) | `next.config.js/ts/mjs` |
+| Nuxt | `nuxt.config.js/ts/mjs` |
+| SvelteKit | `svelte.config.js/ts/mjs` |
+| Remix (+ Vite) | `remix.config.js/ts/mjs` or `vite.config.ts` |
+| Astro | `astro.config.mjs/js/ts` |
+| Vue.js | `vue.config.js/ts` |
+| React (Vite) | `vite.config.js/ts/mjs/cjs` |
+| Angular | `angular.json` |
+| Gatsby | `gatsby-config.js/ts` |
+| Ember.js | `ember-cli-build.js` |
+| SolidJS | `solid.config.js/ts` |
+| Qwik | `qwik.config.ts/js` |
+| Hexo | `_config.yml` + `package.json` |
+| Docusaurus | `docusaurus.config.js/ts` |
+| VitePress | `docs/.vitepress/config.js/ts` |
+
+### Node.js / Backend
+| Framework | Detection |
+|-----------|-----------|
+| Express.js | `package.json` |
+| Fastify | `package.json` |
+| NestJS | `nest-cli.json` |
+| AdonisJS | `adonisrc.ts/js` |
+| Hono | `package.json` |
+| Nitro | `nitro.config.ts/js` |
+| ElysiaJS (Bun) | `package.json` (Bun runtime) |
+| Lynx (Deno) | `deno.json/jsonc` |
+
+### Python
+| Framework | Detection |
+|-----------|-----------|
+| Django | `manage.py` + `settings.py` |
+| Flask | `app.py` + `requirements.txt` |
+| FastAPI | `main.py` + `requirements.txt` |
+| Starlette | `main.py` + `requirements.txt` |
+| Sanic | `app.py` + `requirements.txt` |
+| Gunicorn | `gunicorn.conf.py` |
+| Tornado | `app.py` + `requirements.txt` |
+
+### Go
+| Framework | Detection |
+|-----------|-----------|
+| Go (net/http) | `go.mod` |
+| Echo | `go.mod` |
+| Gin | `go.mod` |
+| Fiber | `go.mod` |
+
+### Rust
+| Framework | Detection |
+|-----------|-----------|
+| Rust (std) | `Cargo.toml` |
+| Actix Web | `Cargo.toml` |
+| Axum | `Cargo.toml` |
+| Rocket | `Cargo.toml` + `Rocket.toml` |
+| Warp | `Cargo.toml` |
+| Leptos | `Cargo.toml` + `Leptos.toml` |
+| Dioxus | `Cargo.toml` + `Dioxus.toml` |
+
+### Ruby
+| Framework | Detection |
+|-----------|-----------|
+| Ruby on Rails | `Gemfile` + `Rakefile` |
+| Sinatra | `Gemfile` + `app.rb` |
+| Hanami | `Gemfile` + `hanami.rb` |
+
+### PHP
+| Framework | Detection |
+|-----------|-----------|
+| Laravel | `composer.json` + `artisan` |
+| Symfony | `composer.json` + `symfony.lock` |
+| WordPress | `wp-config.php` |
+
+### Java / Kotlin / Scala
+| Framework | Detection |
+|-----------|-----------|
+| Spring Boot (Maven) | `pom.xml` |
+| Spring Boot (Gradle) | `build.gradle(.kts)` |
+| Kotlin | `build.gradle.kts` |
+| Micronaut | `micronaut-cli.yml` |
+| Quarkus | `pom.xml` or `build.gradle` |
+| Vert.x | `pom.xml` or `build.gradle` |
+| Scala | `build.sbt` |
+| Clojure | `project.clj` or `deps.edn` |
+
+### C# / .NET
+| Framework | Detection |
+|-----------|-----------|
+| ASP.NET Core | `*.csproj` |
+| Blazor | `*.csproj` + `.razor` files |
+
+### Elixir
+| Framework | Detection |
+|-----------|-----------|
+| Phoenix | `mix.exs` |
+| Elixir | `mix.exs` |
+
+### Dart / Flutter
+| Framework | Detection |
+|-----------|-----------|
+| Flutter (Web) | `pubspec.yaml` |
+| Dart | `pubspec.yaml` |
+
+### Swift
+| Framework | Detection |
+|-----------|-----------|
+| Vapor | `Package.swift` |
+
+### C / C++
+| Framework | Detection |
+|-----------|-----------|
+| C++ (CMake) | `CMakeLists.txt` |
+| C (Make) | `Makefile` |
+| Crow | `CMakeLists.txt` |
+| Drogon | `CMakeLists.txt` |
+
+### Other Languages
+| Framework | Detection |
+|-----------|-----------|
+| Haskell / Servant / Yesod | `*.cabal` |
+| OCaml | `dune-project` |
+| Erlang | `rebar.config` |
+| Zig | `build.zig` |
+| Lua (OpenResty / Lapis) | `nginx.conf` / `rockspec` |
+| R (Shiny / Plumber) | `app.R` / `plumber.R` |
+| Perl (Dancer2 / Mojolicious) | `cpanfile` |
+| WebAssembly | `Cargo.toml` / `CMakeLists.txt` |
+
+### Static Sites
+| Type | Detection |
+|------|-----------|
+| HTML/CSS/JS | `.html` files |
+| Hugo | `config.toml` / `hugo.toml` |
+| Jekyll | `_config.yml` + `Gemfile` |
+| Netlify-style | `netlify.toml` / `vercel.json` |
 
 ## Prerequisites
 
