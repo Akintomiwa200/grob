@@ -65,11 +65,10 @@ export function ImagesClient({
 
   async function handleUpload() {
     if (!uploadName) return;
-    const mockSize = Math.round(500000 + Math.random() * 3000000);
     const img = await createImage(images[0] ? "" : "", {
       name: uploadName,
       url: `/images/${uploadName}`,
-      originalSize: mockSize,
+      originalSize: 0,
       width: parseInt(uploadWidth) || 1920,
       height: parseInt(uploadHeight) || 1080,
       originalFormat: uploadFormat,

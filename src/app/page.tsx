@@ -63,14 +63,15 @@ const stagger: Variants = {
 
 const LOG_LINES = [
   { text: "$ git push origin main", kind: "cmd" },
-  { text: "→ Detected Next.js 14 project", kind: "info" },
+  { text: "→ Detecting project language…", kind: "info" },
+  { text: "✓ Detected Python / FastAPI", kind: "ok" },
   { text: "→ Installing dependencies…", kind: "info" },
-  { text: "✓ Dependencies installed (4.2s)", kind: "ok" },
+  { text: "✓ Dependencies installed (3.8s)", kind: "ok" },
   { text: "→ Running build…", kind: "info" },
-  { text: "✓ Build completed (11.8s)", kind: "ok" },
+  { text: "✓ Build completed (9.2s)", kind: "ok" },
   { text: "→ Uploading to edge network…", kind: "info" },
   { text: "✓ Deployed to production", kind: "ok" },
-  { text: "● grob-app.grob.app is live", kind: "live" },
+  { text: "● api.grob-app.grob.app is live", kind: "live" },
 ] as const;
 
 function BuildConsole() {
@@ -197,8 +198,8 @@ const FEATURES = [
   },
   {
     icon: ShieldCheck,
-    title: "Custom domains",
-    desc: "Point a domain and get SSL automatically. No certificates to manage, ever.",
+    title: "70+ frameworks",
+    desc: "Next.js, Django, Go, Rust, Laravel, Spring Boot, Rails, and more. Auto-detected from your repo.",
   },
 ];
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import {
   User,
   Mail,
@@ -304,7 +304,7 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
                     </span>
                   ) : (
                     <button
-                      onClick={() => signIn("github", { callbackUrl: "/dashboard/profile" })}
+                      onClick={() => { window.location.href = "/api/auth/link-github"; }}
                       className="rounded-lg border border-border bg-transparent px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-white/5"
                     >
                       Connect

@@ -64,7 +64,47 @@ export const authOptions = {
     signIn: '/login',
   },
   callbacks: {
-    jwt({ token, user }: any) {
+    async jwt({ token, user, account }: any) {
+      let linkUserId: string | undefined;
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        linkUserId = cookieStore.get("grob-link-user-id")?.value;
+      } catch (e) {
+        console.error("Failed to read cookies in jwt callback", e);
+      }
+
+      const targetUserId = linkUserId || token.id;
+
+      if (account && targetUserId) {
+        await prisma.account.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            },
+          },
+          update: { userId: targetUserId },
+          create: {
+            userId: targetUserId,
+            type: account.type,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            access_token: account.access_token,
+            token_type: account.token_type,
+            scope: account.scope,
+          },
+        });
+
+        try {
+          const { cookies } = await import("next/headers");
+          const cookieStore = await cookies();
+          cookieStore.delete("grob-link-user-id");
+        } catch (e) {}
+
+        token.id = targetUserId;
+        return token;
+      }
       if (user) token.id = user.id;
       return token;
     },

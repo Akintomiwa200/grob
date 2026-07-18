@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Power,
 } from "lucide-react";
+import { ConnectGitHubButton } from "./ConnectGitHubButton";
 
 export default async function ConnectPage(props: {
   params: Promise<{ id: string }>;
@@ -28,9 +29,6 @@ export default async function ConnectPage(props: {
   const repoName = project.gitUrl
     ? project.gitUrl.replace("https://github.com/", "").replace(".git", "")
     : null;
-
-  const fakePublicKey =
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHkL7J9xQ2M3vTbGh6aFpL2dR8sW4kN1eY7cX5zA0vQk deploy@grob";
 
   const deployHooks = [
     {
@@ -102,9 +100,7 @@ export default async function ConnectPage(props: {
                   </p>
                 </div>
               </div>
-              <button className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:opacity-90 transition">
-                Connect GitHub
-              </button>
+              <ConnectGitHubButton />
             </div>
           )}
         </div>
@@ -172,7 +168,7 @@ export default async function ConnectPage(props: {
           </p>
           <div className="flex items-center gap-2 bg-bg border border-border rounded-lg px-3 py-2.5">
             <code className="text-xs text-text font-mono break-all flex-1 select-all">
-              {fakePublicKey}
+              No SSH key generated yet
             </code>
             <button
               className="p-1.5 rounded-lg text-muted hover:text-text hover:bg-white/[0.05] transition-colors shrink-0"

@@ -9,7 +9,52 @@ const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-type Framework = "nextjs" | "vite" | "vue" | "astro" | "svelte";
+type Framework = "nextjs" | "vite" | "vue" | "astro" | "svelte" | "django" | "fastapi" | "flask" | "go" | "rust" | "actix" | "laravel" | "rails" | "spring" | "dotnet" | "phoenix" | "flutter" | "hugo";
+
+type LangGroup = "JavaScript / TypeScript" | "Python" | "Go" | "Rust" | "PHP" | "Ruby" | "Java" | ".NET" | "Elixir" | "Dart" | "Static";
+
+const FRAMEWORK_GROUPS: Record<LangGroup, { id: Framework; name: string; desc: string }[]> = {
+  "JavaScript / TypeScript": [
+    { id: "nextjs", name: "Next.js", desc: "SSR / SSG / Serverless Functions" },
+    { id: "vite", name: "React (Vite)", desc: "Optimized Single Page App (SPA)" },
+    { id: "vue", name: "Vue / Nuxt", desc: "Reactive Frontend Framework" },
+    { id: "astro", name: "Astro", desc: "Content-driven Static Site" },
+    { id: "svelte", name: "SvelteKit", desc: "Ultra-lean Compiler Site" },
+  ],
+  Python: [
+    { id: "django", name: "Django", desc: "Full-featured Python Web Framework" },
+    { id: "fastapi", name: "FastAPI", desc: "High-performance Async API" },
+    { id: "flask", name: "Flask", desc: "Lightweight Python Micro-framework" },
+  ],
+  Go: [
+    { id: "go", name: "Go (Echo / Gin / Fiber)", desc: "Fast Compiled Backend" },
+  ],
+  Rust: [
+    { id: "rust", name: "Rust (Actix / Axum / Rocket)", desc: "Blazingly Fast Backend" },
+    { id: "actix", name: "Rust (Leptos)", desc: "Full-stack Rust Framework" },
+  ],
+  PHP: [
+    { id: "laravel", name: "Laravel", desc: "Elegant PHP Full-stack Framework" },
+  ],
+  Ruby: [
+    { id: "rails", name: "Ruby on Rails", desc: "Convention-over-Configuration Web Framework" },
+  ],
+  Java: [
+    { id: "spring", name: "Spring Boot", desc: "Enterprise Java Framework" },
+  ],
+  ".NET": [
+    { id: "dotnet", name: "ASP.NET Core", desc: "Cross-platform .NET Backend" },
+  ],
+  Elixir: [
+    { id: "phoenix", name: "Phoenix (Elixir)", desc: "Fault-tolerant Concurrent Web App" },
+  ],
+  Dart: [
+    { id: "flutter", name: "Flutter (Web)", desc: "Cross-platform UI → Web Build" },
+  ],
+  Static: [
+    { id: "hugo", name: "Hugo", desc: "Blazingly Fast Static Site Generator" },
+  ],
+};
 
 export default function QuickstartPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -19,47 +64,67 @@ export default function QuickstartPage() {
   const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
 
-  const frameworks = [
-    { id: "nextjs" as Framework, name: "Next.js", desc: "SSR / SSG / Serverless Functions" },
-    { id: "vite" as Framework, name: "React (Vite)", desc: "Optimized Single Page App (SPA)" },
-    { id: "vue" as Framework, name: "Vue / Nuxt", desc: "Reactive Frontend Framework" },
-    { id: "astro" as Framework, name: "Astro", desc: "Content-driven Static Website" },
-    { id: "svelte" as Framework, name: "SvelteKit", desc: "Ultra-lean Compiler Site" },
-  ];
-
   const repos = [
     "alex-dev/nextjs-saas-dashboard",
     "alex-dev/my-vite-portfolio",
-    "alex-dev/nuxt-ecommerce-store",
-    "alex-dev/astro-personal-blog",
-    "alex-dev/sveltekit-todo-app"
+    "alex-dev/django-rest-api",
+    "alex-dev/go-microservice",
+    "alex-dev/rust-axum-server",
+    "alex-dev/laravel-dashboard",
+    "alex-dev/rails-api",
+    "alex-dev/spring-boot-app",
   ];
 
+  const getFrameworkDefaults = (fw: Framework) => {
+    const map: Record<Framework, { build: string; output: string; cmd: string }> = {
+      nextjs:   { build: "next build", output: ".next", cmd: "next build" },
+      vite:     { build: "vite build", output: "dist", cmd: "npm run build" },
+      vue:      { build: "nuxt build", output: ".output", cmd: "nuxt build" },
+      astro:    { build: "astro build", output: "dist", cmd: "npx astro build" },
+      svelte:   { build: "npm run build", output: "build", cmd: "npm run build" },
+      django:   { build: "python manage.py collectstatic --noinput", output: "staticfiles", cmd: "python manage.py collectstatic --noinput" },
+      fastapi:  { build: "— (None Required)", output: ".", cmd: "uvicorn main:app --host 0.0.0.0 --port 3000" },
+      flask:    { build: "— (None Required)", output: ".", cmd: "python app.py" },
+      go:       { build: "go build -o server .", output: ".", cmd: "go build -o server ." },
+      rust:     { build: "cargo build --release", output: "target/release", cmd: "cargo build --release" },
+      actix:    { build: "cargo leptos build --release", output: "target/release", cmd: "cargo leptos build --release" },
+      laravel:  { build: "php artisan config:cache", output: "public", cmd: "composer install --no-dev" },
+      rails:    { build: "bundle exec rake assets:precompile", output: "public/assets", cmd: "bundle install" },
+      spring:   { build: "./mvnw clean package -DskipTests", output: "target", cmd: "./mvnw package" },
+      dotnet:   { build: "dotnet publish -c Release -o out", output: "out", cmd: "dotnet restore" },
+      phoenix:  { build: "mix assets.deploy", output: "priv/static", cmd: "mix deps.get" },
+      flutter:  { build: "flutter build web --release", output: "build/web", cmd: "flutter pub get" },
+      hugo:     { build: "hugo --minify", output: "public", cmd: "hugo --minify" },
+    };
+    return map[fw];
+  };
+
   const startDeployment = async () => {
+    const fwDefaults = getFrameworkDefaults(selectedFramework);
     setDeployState("building");
     setDeployLogs([]);
     setProgress(10);
     
     await wait(400);
     addLog("⚡ Initializing build container...");
-    setProgress(30);
+    setProgress(25);
     
-    await wait(600);
-    addLog("📦 Installing project packages via pnpm...");
-    setProgress(50);
+    await wait(500);
+    addLog(`📦 Installing dependencies — ${fwDefaults.cmd}`);
+    setProgress(45);
     
-    await wait(800);
-    addLog("⚙ Compiling bundle & generating routes...");
-    addLog(`  ↳ Running command: ${selectedFramework === "nextjs" ? "next build" : "npm run build"}`);
-    setProgress(75);
+    await wait(700);
+    addLog(`⚙ Compiling bundle & generating routes...`);
+    addLog(`  ↳ Running command: ${fwDefaults.build}`);
+    setProgress(70);
     
-    await wait(1000);
+    await wait(900);
     addLog("✔ Assets built successfully.");
-    addLog("🚀 Mirroring bundle files to 24 Edge CDN locations...");
+    addLog("🚀 Mirroring bundle to 200+ Edge CDN locations...");
     setProgress(90);
     
-    await wait(600);
-    addLog("🔒 Provisioning auto SSL Let's Encrypt certificates...");
+    await wait(500);
+    addLog("🔒 Provisioning auto SSL certificates...");
     setProgress(100);
     
     await wait(400);
@@ -130,20 +195,27 @@ export default function QuickstartPage() {
           {step === 1 && (
             <div>
               <h3 className="text-base font-bold text-text mb-4">Choose your framework:</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {frameworks.map((fw) => (
-                  <button
-                    key={fw.id}
-                    onClick={() => setSelectedFramework(fw.id)}
-                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                      selectedFramework === fw.id
-                        ? "border-accent bg-accent/5 ring-1 ring-accent"
-                        : "border-border bg-bg/20 hover:border-accent/40"
-                    }`}
-                  >
-                    <span className="block font-bold text-text text-sm mb-1">{fw.name}</span>
-                    <span className="block text-xs text-muted leading-relaxed">{fw.desc}</span>
-                  </button>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 scrollbar-hidden">
+                {(Object.keys(FRAMEWORK_GROUPS) as LangGroup[]).map((group) => (
+                  <div key={group}>
+                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider block mb-1.5 px-1">{group}</span>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {FRAMEWORK_GROUPS[group].map((fw) => (
+                        <button
+                          key={fw.id}
+                          onClick={() => setSelectedFramework(fw.id)}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                            selectedFramework === fw.id
+                              ? "border-accent bg-accent/5 ring-1 ring-accent"
+                              : "border-border bg-bg/20 hover:border-accent/40"
+                          }`}
+                        >
+                          <span className="block font-bold text-text text-sm mb-0.5">{fw.name}</span>
+                          <span className="block text-xs text-muted leading-relaxed">{fw.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
               <div className="mt-6 flex justify-end">
@@ -211,11 +283,20 @@ export default function QuickstartPage() {
                     </h4>
                     <div className="grid gap-4 sm:grid-cols-2 text-sm">
                       <div>
+                        <label className="block text-xs font-semibold text-muted mb-1">Install Command</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={getFrameworkDefaults(selectedFramework).cmd}
+                          className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 font-mono text-muted text-xs focus:outline-none"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-xs font-semibold text-muted mb-1">Build Command</label>
                         <input 
                           type="text" 
                           readOnly 
-                          value={selectedFramework === "nextjs" ? "npm run build" : "vite build"}
+                          value={getFrameworkDefaults(selectedFramework).build}
                           className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 font-mono text-muted text-xs focus:outline-none"
                         />
                       </div>
@@ -224,7 +305,7 @@ export default function QuickstartPage() {
                         <input 
                           type="text" 
                           readOnly 
-                          value={selectedFramework === "nextjs" ? ".next" : "dist"}
+                          value={getFrameworkDefaults(selectedFramework).output}
                           className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 font-mono text-muted text-xs focus:outline-none"
                         />
                       </div>

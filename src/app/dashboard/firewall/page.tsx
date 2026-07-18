@@ -16,6 +16,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import Link from "next/link";
 
 type FirewallRule = {
   id: string;
@@ -27,46 +28,15 @@ type FirewallRule = {
 };
 
 export default function FirewallPage() {
-  const [rules, setRules] = useState<FirewallRule[]>([
-    {
-      id: "1",
-      name: "Block Known Bad Bots",
-      type: "block",
-      target: "User-Agent Pattern",
-      description: "Blocks requests from known malicious bot patterns and scrapers.",
-      enabled: true,
-    },
-    {
-      id: "2",
-      name: "Rate Limit API Endpoints",
-      type: "rate-limit",
-      target: "/api/*",
-      description: "Limits to 100 requests per minute per IP address.",
-      enabled: true,
-    },
-    {
-      id: "3",
-      name: "Challenge Suspicious Traffic",
-      type: "challenge",
-      target: "Geographic Filter",
-      description: "JS challenge for traffic from regions with high fraud rates.",
-      enabled: false,
-    },
-  ]);
+  const [rules, setRules] = useState<FirewallRule[]>([]);
 
   const [showNewRule, setShowNewRule] = useState(false);
 
-  const blockedIPs = [
-    { ip: "185.220.101.42", reason: "Repeated 403 errors", added: "2 days ago" },
-    { ip: "103.152.118.71", reason: "SQL injection attempts", added: "5 days ago" },
-    { ip: "91.134.203.18", reason: "DDoS participant", added: "1 week ago" },
-  ];
-
   const stats = [
-    { label: "Blocked Requests (24h)", value: "2,847", icon: Ban, color: "text-red-500", bg: "bg-red-500/10" },
+    { label: "Blocked Requests (24h)", value: "—", icon: Ban, color: "text-red-500", bg: "bg-red-500/10" },
     { label: "Active Rules", value: rules.filter((r) => r.enabled).length.toString(), icon: ShieldHalf, color: "text-accent", bg: "bg-accent/10" },
-    { label: "Challenged Requests", value: "412", icon: Lock, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { label: "Rate Limited", value: "156", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Challenged Requests", value: "—", icon: Lock, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Rate Limited", value: "—", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10" },
   ];
 
   const toggleRule = (id: string) => {
@@ -167,78 +137,96 @@ export default function FirewallPage() {
 
       <div className="mb-8">
         <h2 className="font-semibold text-text mb-4">Firewall Rules</h2>
-        <div className="space-y-3">
-          {rules.map((rule) => (
-            <div
-              key={rule.id}
-              className="rounded-xl border border-border bg-surface/20 p-5 hover:bg-white/[0.02] transition-colors"
+        {rules.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface/20 p-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 mx-auto mb-4">
+              <ShieldHalf className="h-7 w-7 text-accent" />
+            </div>
+            <h3 className="text-sm font-semibold text-text mb-1">No firewall rules</h3>
+            <p className="text-xs text-muted max-w-sm mx-auto mb-4">
+              Create rules to block bad bots, rate-limit API endpoints, and challenge suspicious traffic.
+            </p>
+            <button
+              onClick={() => setShowNewRule(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:brightness-110 transition-all"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                      rule.type === "block"
-                        ? "bg-red-500/10"
-                        : rule.type === "rate-limit"
-                        ? "bg-blue-500/10"
-                        : rule.type === "challenge"
-                        ? "bg-amber-500/10"
-                        : "bg-emerald-500/10"
-                    }`}
-                  >
-                    {rule.type === "block" ? (
-                      <Ban className="h-5 w-5 text-red-500" />
-                    ) : rule.type === "rate-limit" ? (
-                      <Clock className="h-5 w-5 text-blue-500" />
-                    ) : rule.type === "challenge" ? (
-                      <Lock className="h-5 w-5 text-amber-500" />
-                    ) : (
-                      <ShieldHalf className="h-5 w-5 text-emerald-500" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-text">{rule.name}</h3>
-                      <span
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                          rule.type === "block"
-                            ? "bg-red-500/10 text-red-500"
-                            : rule.type === "rate-limit"
-                            ? "bg-blue-500/10 text-blue-500"
-                            : rule.type === "challenge"
-                            ? "bg-amber-500/10 text-amber-500"
-                            : "bg-emerald-500/10 text-emerald-500"
-                        }`}
-                      >
-                        {rule.type}
-                      </span>
+              <Plus className="h-4 w-4" /> Create Rule
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rules.map((rule) => (
+              <div
+                key={rule.id}
+                className="rounded-xl border border-border bg-surface/20 p-5 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                        rule.type === "block"
+                          ? "bg-red-500/10"
+                          : rule.type === "rate-limit"
+                          ? "bg-blue-500/10"
+                          : rule.type === "challenge"
+                          ? "bg-amber-500/10"
+                          : "bg-emerald-500/10"
+                      }`}
+                    >
+                      {rule.type === "block" ? (
+                        <Ban className="h-5 w-5 text-red-500" />
+                      ) : rule.type === "rate-limit" ? (
+                        <Clock className="h-5 w-5 text-blue-500" />
+                      ) : rule.type === "challenge" ? (
+                        <Lock className="h-5 w-5 text-amber-500" />
+                      ) : (
+                        <ShieldHalf className="h-5 w-5 text-emerald-500" />
+                      )}
                     </div>
-                    <p className="text-xs text-muted mt-0.5">Target: {rule.target}</p>
-                    <p className="text-sm text-muted mt-1">{rule.description}</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-text">{rule.name}</h3>
+                        <span
+                          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                            rule.type === "block"
+                              ? "bg-red-500/10 text-red-500"
+                              : rule.type === "rate-limit"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : rule.type === "challenge"
+                              ? "bg-amber-500/10 text-amber-500"
+                              : "bg-emerald-500/10 text-emerald-500"
+                          }`}
+                        >
+                          {rule.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted mt-0.5">Target: {rule.target}</p>
+                      <p className="text-sm text-muted mt-1">{rule.description}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleRule(rule.id)}
-                    className="p-1 rounded-lg hover:bg-white/5 transition-colors"
-                  >
-                    {rule.enabled ? (
-                      <ToggleRight className="h-6 w-6 text-accent" />
-                    ) : (
-                      <ToggleLeft className="h-6 w-6 text-muted" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => deleteRule(rule.id)}
-                    className="p-1.5 rounded-lg text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleRule(rule.id)}
+                      className="p-1 rounded-lg hover:bg-white/5 transition-colors"
+                    >
+                      {rule.enabled ? (
+                        <ToggleRight className="h-6 w-6 text-accent" />
+                      ) : (
+                        <ToggleLeft className="h-6 w-6 text-muted" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => deleteRule(rule.id)}
+                      className="p-1.5 rounded-lg text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-surface/20 p-6">
@@ -248,30 +236,10 @@ export default function FirewallPage() {
             <Plus className="h-3 w-3" /> Add IP
           </button>
         </div>
-        <table className="w-full text-left text-sm">
-          <thead className="text-muted">
-            <tr>
-              <th className="px-4 py-2 font-medium">IP Address</th>
-              <th className="px-4 py-2 font-medium hidden sm:table-cell">Reason</th>
-              <th className="px-4 py-2 font-medium hidden md:table-cell">Added</th>
-              <th className="px-4 py-2 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {blockedIPs.map((ip) => (
-              <tr key={ip.ip} className="hover:bg-white/[0.02] transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-text">{ip.ip}</td>
-                <td className="px-4 py-3 text-xs text-muted hidden sm:table-cell">{ip.reason}</td>
-                <td className="px-4 py-3 text-xs text-muted hidden md:table-cell">{ip.added}</td>
-                <td className="px-4 py-3 text-right">
-                  <button className="text-xs text-muted hover:text-red-500 transition-colors">
-                    Unblock
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="text-center py-8">
+          <Ban className="h-5 w-5 text-muted mx-auto mb-2" />
+          <p className="text-sm text-muted">No blocked IP addresses</p>
+        </div>
       </div>
     </div>
   );

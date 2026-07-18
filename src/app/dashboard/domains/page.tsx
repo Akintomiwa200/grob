@@ -9,6 +9,9 @@ export default async function DomainsPage() {
   if (!session) redirect("/login");
 
   const domains = await prisma.domain.findMany({
+    where: {
+      project: { userId: session.user.id },
+    },
     include: { project: { select: { name: true, id: true } } },
     orderBy: { createdAt: "desc" },
   });

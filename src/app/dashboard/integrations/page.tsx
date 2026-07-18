@@ -15,6 +15,7 @@ import {
   Cloud,
   Database,
 } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 type Integration = {
   id: string;
@@ -24,7 +25,6 @@ type Integration = {
   icon: any;
   color: string;
   bg: string;
-  connected: boolean;
 };
 
 export default function IntegrationsPage() {
@@ -40,7 +40,6 @@ export default function IntegrationsPage() {
       icon: GitBranch,
       color: "text-text",
       bg: "bg-white/10",
-      connected: true,
     },
     {
       id: "gitlab",
@@ -50,7 +49,6 @@ export default function IntegrationsPage() {
       icon: GitBranch,
       color: "text-orange-500",
       bg: "bg-orange-500/10",
-      connected: false,
     },
     {
       id: "slack",
@@ -60,7 +58,6 @@ export default function IntegrationsPage() {
       icon: MessageSquare,
       color: "text-purple-500",
       bg: "bg-purple-500/10",
-      connected: false,
     },
     {
       id: "discord",
@@ -70,7 +67,6 @@ export default function IntegrationsPage() {
       icon: MessageSquare,
       color: "text-indigo-500",
       bg: "bg-indigo-500/10",
-      connected: false,
     },
     {
       id: "email",
@@ -80,7 +76,6 @@ export default function IntegrationsPage() {
       icon: Mail,
       color: "text-blue-500",
       bg: "bg-blue-500/10",
-      connected: true,
     },
     {
       id: "webhooks",
@@ -90,7 +85,6 @@ export default function IntegrationsPage() {
       icon: Webhook,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
-      connected: false,
     },
     {
       id: "sentry",
@@ -100,7 +94,6 @@ export default function IntegrationsPage() {
       icon: Cloud,
       color: "text-pink-500",
       bg: "bg-pink-500/10",
-      connected: false,
     },
     {
       id: "datadog",
@@ -110,7 +103,6 @@ export default function IntegrationsPage() {
       icon: Database,
       color: "text-purple-500",
       bg: "bg-purple-500/10",
-      connected: false,
     },
     {
       id: "vercel",
@@ -120,7 +112,6 @@ export default function IntegrationsPage() {
       icon: Cloud,
       color: "text-text",
       bg: "bg-white/10",
-      connected: false,
     },
   ];
 
@@ -192,20 +183,11 @@ export default function IntegrationsPage() {
                     <p className="text-[10px] text-muted">{integration.category}</p>
                   </div>
                 </div>
-                {integration.connected && (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                )}
               </div>
               <p className="text-sm text-muted mb-4">{integration.description}</p>
               <div className="flex items-center gap-2">
-                <button
-                  className={`flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                    integration.connected
-                      ? "bg-white/5 text-text hover:bg-white/10 border border-border"
-                      : "bg-accent text-white hover:bg-accent/90"
-                  }`}
-                >
-                  {integration.connected ? "Configure" : "Connect"}
+                <button className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg transition-colors bg-accent text-white hover:bg-accent/90">
+                  Connect
                 </button>
                 <button className="p-2 rounded-lg text-muted hover:text-text hover:bg-white/5 transition-colors">
                   <ExternalLink className="h-4 w-4" />

@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import { Blocks, ArrowLeft, CheckCircle2, ExternalLink, Settings, Trash2, Webhook, Bell, Key, Clock } from "lucide-react";
 import Link from "next/link";
 
-const integrationData: Record<string, { name: string; desc: string; category: string; connected: boolean; fields: { label: string; type: string; placeholder: string }[] }> = {
-  github: { name: "GitHub", desc: "Automatic deployments from GitHub repositories.", category: "Version Control", connected: true, fields: [{ label: "Repository URL", type: "text", placeholder: "https://github.com/user/repo" }, { label: "Branch", type: "text", placeholder: "main" }, { label: "Webhook Secret", type: "password", placeholder: "••••••••" }] },
-  slack: { name: "Slack", desc: "Deployment notifications in Slack channels.", category: "Notifications", connected: false, fields: [{ label: "Webhook URL", type: "text", placeholder: "https://hooks.slack.com/..." }, { label: "Channel", type: "text", placeholder: "#deployments" }] },
-  discord: { name: "Discord", desc: "Send deployment updates to Discord.", category: "Notifications", connected: false, fields: [{ label: "Webhook URL", type: "text", placeholder: "https://discord.com/api/webhooks/..." }] },
-  sentry: { name: "Sentry", desc: "Track and monitor errors.", category: "Monitoring", connected: false, fields: [{ label: "DSN", type: "text", placeholder: "https://key@sentry.io/project" }, { label: "Org Slug", type: "text", placeholder: "my-org" }] },
-  datadog: { name: "Datadog", desc: "Export metrics and logs.", category: "Monitoring", connected: false, fields: [{ label: "API Key", type: "password", placeholder: "••••••••" }, { label: "Site", type: "text", placeholder: "datadoghq.com" }] },
+const integrationData: Record<string, { name: string; desc: string; category: string; fields: { label: string; type: string; placeholder: string }[] }> = {
+  github: { name: "GitHub", desc: "Automatic deployments from GitHub repositories.", category: "Version Control", fields: [{ label: "Repository URL", type: "text", placeholder: "https://github.com/user/repo" }, { label: "Branch", type: "text", placeholder: "main" }, { label: "Webhook Secret", type: "password", placeholder: "••••••••" }] },
+  slack: { name: "Slack", desc: "Deployment notifications in Slack channels.", category: "Notifications", fields: [{ label: "Webhook URL", type: "text", placeholder: "https://hooks.slack.com/..." }, { label: "Channel", type: "text", placeholder: "#deployments" }] },
+  discord: { name: "Discord", desc: "Send deployment updates to Discord.", category: "Notifications", fields: [{ label: "Webhook URL", type: "text", placeholder: "https://discord.com/api/webhooks/..." }] },
+  sentry: { name: "Sentry", desc: "Track and monitor errors.", category: "Monitoring", fields: [{ label: "DSN", type: "text", placeholder: "https://key@sentry.io/project" }, { label: "Org Slug", type: "text", placeholder: "my-org" }] },
+  datadog: { name: "Datadog", desc: "Export metrics and logs.", category: "Monitoring", fields: [{ label: "API Key", type: "password", placeholder: "••••••••" }, { label: "Site", type: "text", placeholder: "datadoghq.com" }] },
 };
 
 export default async function IntegrationDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -16,7 +16,7 @@ export default async function IntegrationDetailPage(props: { params: Promise<{ i
   if (!session) redirect("/login");
 
   const { id } = await props.params;
-  const data = integrationData[id] || { name: id, desc: "Integration configuration", category: "General", connected: false, fields: [] };
+  const data = integrationData[id] || { name: id, desc: "Integration configuration", category: "General", fields: [] };
 
   return (
     <div className="mx-auto max-w-6xl pb-12">
@@ -28,15 +28,10 @@ export default async function IntegrationDetailPage(props: { params: Promise<{ i
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight text-text">{data.name}</h1>
-              {data.connected && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">Connected</span>}
             </div>
             <p className="text-muted text-sm mt-1">{data.desc}</p>
           </div>
-          {data.connected ? (
-            <button className="px-3 py-2 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1.5"><Trash2 className="h-4 w-4" /> Disconnect</button>
-          ) : (
-            <button className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors">Connect</button>
-          )}
+          <button className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors">Connect</button>
         </div>
       </div>
 
@@ -78,7 +73,7 @@ export default async function IntegrationDetailPage(props: { params: Promise<{ i
                 ))}
               </div>
             </div>
-            <button className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors">{data.connected ? "Update" : "Save & Connect"}</button>
+            <button className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors">Save & Connect</button>
           </div>
         </div>
       </div>
@@ -87,7 +82,7 @@ export default async function IntegrationDetailPage(props: { params: Promise<{ i
         <div className="px-6 py-4 border-b border-border bg-surface/30"><h2 className="font-semibold text-text">Activity Log</h2></div>
         <div className="px-6 py-12 text-center">
           <Clock className="h-6 w-6 text-muted mx-auto mb-3" />
-          <p className="text-sm text-muted">No activity yet.</p>
+          <p className="text-sm text-muted">No activity yet. Connect this integration to start seeing events.</p>
         </div>
       </div>
     </div>

@@ -18,55 +18,9 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-type Agent = {
-  id: string;
-  name: string;
-  description: string;
-  model: string;
-  status: "active" | "inactive";
-  tasks: number;
-  lastUsed: string;
-};
-
 export default function AgentPage() {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: "user" | "agent"; content: string }[]>([
-    {
-      role: "agent",
-      content:
-        "Hello! I'm your AI Agent. I can help you generate code, write documentation, debug issues, and automate tasks across your projects. What would you like to work on?",
-    },
-  ]);
-
-  const agents: Agent[] = [
-    {
-      id: "1",
-      name: "Code Assistant",
-      description: "Generates boilerplate, refactors code, and suggests improvements.",
-      model: "gpt-4o",
-      status: "active",
-      tasks: 142,
-      lastUsed: "2 hours ago",
-    },
-    {
-      id: "2",
-      name: "Documentation Writer",
-      description: "Creates and maintains project documentation, READMEs, and API docs.",
-      model: "gpt-4o-mini",
-      status: "active",
-      tasks: 38,
-      lastUsed: "1 day ago",
-    },
-    {
-      id: "3",
-      name: "Test Generator",
-      description: "Writes unit tests and integration tests for your codebase.",
-      model: "gpt-4o",
-      status: "inactive",
-      tasks: 12,
-      lastUsed: "1 week ago",
-    },
-  ];
+  const [messages, setMessages] = useState<{ role: "user" | "agent"; content: string }[]>([]);
 
   const capabilities = [
     { name: "Code Generation", icon: Code, description: "Generate functions, components, and full modules" },
@@ -77,13 +31,13 @@ export default function AgentPage() {
 
   const handleSend = () => {
     if (!input.trim()) return;
+    const userMsg = input;
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: input },
+      { role: "user", content: userMsg },
       {
         role: "agent",
-        content:
-          "I'm analyzing your request. In a production environment, I would process this with the configured AI model and return relevant results based on your codebase context.",
+        content: "AI Agent is not yet configured. Connect an AI provider in Settings to enable agent capabilities.",
       },
     ]);
     setInput("");
@@ -125,22 +79,34 @@ export default function AgentPage() {
             </div>
           </div>
           <div className="sidebar-scroll h-96 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
-                    msg.role === "user"
-                      ? "bg-accent text-white"
-                      : "bg-white/5 text-text border border-border"
-                  }`}
-                >
-                  {msg.content}
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 mb-4">
+                  <Bot className="h-7 w-7 text-accent" />
                 </div>
+                <h3 className="text-sm font-semibold text-text mb-1">No agents configured</h3>
+                <p className="text-xs text-muted max-w-sm">
+                  Create an agent or connect an AI provider in Settings to start automating tasks.
+                </p>
               </div>
-            ))}
+            ) : (
+              messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
+                      msg.role === "user"
+                        ? "bg-accent text-white"
+                        : "bg-white/5 text-text border border-border"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
           <div className="px-6 py-4 border-t border-border">
             <div className="flex items-center gap-3">
@@ -208,41 +174,14 @@ export default function AgentPage() {
       <div className="mb-4">
         <h2 className="font-semibold text-text mb-4">Your Agents</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {agents.map((agent) => (
-          <div
-            key={agent.id}
-            className="rounded-xl border border-border bg-surface/20 p-5 hover:bg-white/[0.02] transition-colors"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-                <Bot className="h-5 w-5 text-accent" />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    agent.status === "active" ? "bg-emerald-500" : "bg-muted"
-                  }`}
-                />
-                <span className="text-[10px] text-muted capitalize">{agent.status}</span>
-              </div>
-            </div>
-            <h3 className="font-semibold text-text mb-1">{agent.name}</h3>
-            <p className="text-xs text-muted mb-3">{agent.description}</p>
-            <div className="flex items-center justify-between text-xs text-muted">
-              <span className="font-mono bg-white/5 px-1.5 py-0.5 rounded">{agent.model}</span>
-              <span>{agent.tasks} tasks</span>
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-text bg-white/5 border border-border rounded-lg hover:bg-white/10 transition-colors">
-                <Play className="h-3 w-3" /> Run
-              </button>
-              <button className="p-2 rounded-lg text-muted hover:text-text hover:bg-white/5 transition-colors">
-                <Settings className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="rounded-xl border border-border bg-surface/20 p-12 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 mx-auto mb-4">
+          <Bot className="h-7 w-7 text-accent" />
+        </div>
+        <h3 className="text-sm font-semibold text-text mb-1">No agents created</h3>
+        <p className="text-xs text-muted max-w-sm mx-auto">
+          Create an AI agent to automate code generation, documentation, testing, and more.
+        </p>
       </div>
     </div>
   );

@@ -1,17 +1,11 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Trash2, CheckCircle2, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, RefreshCcw, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default async function CDNPurgePage() {
   const session = await auth();
   if (!session) redirect("/login");
-
-  const purgeHistory = [
-    { id: "1", path: "/_next/static/*", type: "Selective", status: "completed", date: "2 hours ago" },
-    { id: "2", path: "/images/*", type: "Selective", status: "completed", date: "1 day ago" },
-    { id: "3", path: "/*", type: "Whole Cache", status: "completed", date: "3 days ago" },
-  ];
 
   return (
     <div className="mx-auto max-w-6xl pb-12">
@@ -80,17 +74,10 @@ export default async function CDNPurgePage() {
         <div className="px-6 py-4 border-b border-border bg-surface/30">
           <h2 className="font-semibold text-text">Purge History</h2>
         </div>
-        <div className="divide-y divide-border">
-          {purgeHistory.map((item) => (
-            <div key={item.id} className="flex items-center justify-between px-6 py-3">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm font-mono text-text">{item.path}</span>
-                <span className="text-xs text-muted">{item.type}</span>
-              </div>
-              <span className="text-xs text-muted">{item.date}</span>
-            </div>
-          ))}
+        <div className="px-6 py-12 text-center">
+          <Clock className="h-5 w-5 text-muted mx-auto mb-2" />
+          <p className="text-sm text-muted">No purges yet</p>
+          <p className="text-xs text-muted mt-1">Purge history will appear here once you clear cached content.</p>
         </div>
       </div>
     </div>

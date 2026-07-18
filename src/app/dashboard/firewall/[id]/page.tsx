@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { ShieldHalf, ArrowLeft, Trash2, CheckCircle2, Ban, Clock, Globe, Edit3 } from "lucide-react";
+import { ShieldHalf, ArrowLeft, Trash2, Ban, Clock, Globe, Edit3 } from "lucide-react";
 import Link from "next/link";
 
 export default async function FirewallRuleDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -9,18 +8,6 @@ export default async function FirewallRuleDetailPage(props: { params: Promise<{ 
   if (!session) redirect("/login");
 
   const { id } = await props.params;
-
-  const rule = {
-    id,
-    name: `Rule ${id.slice(0, 6)}`,
-    type: "Managed",
-    action: "Block",
-    pattern: "/*sql*injection*",
-    status: "active",
-    description: "Blocks common SQL injection attack patterns",
-    priority: 1,
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-  };
 
   return (
     <div className="mx-auto max-w-6xl pb-12">
@@ -31,34 +18,11 @@ export default async function FirewallRuleDetailPage(props: { params: Promise<{ 
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight text-text">{rule.name}</h1>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">Active</span>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent">{rule.type}</span>
+              <h1 className="text-3xl font-bold tracking-tight text-text">Firewall Rule</h1>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted/10 text-muted">Not configured</span>
             </div>
-            <p className="text-muted text-sm mt-1">{rule.description}</p>
+            <p className="text-muted text-sm mt-1">This rule has not been set up yet.</p>
           </div>
-          <button className="px-3 py-2 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1.5">
-            <Trash2 className="h-4 w-4" /> Delete Rule
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-xl border border-border bg-surface/20 p-4">
-          <p className="text-xs text-muted mb-1">Action</p>
-          <p className="text-sm font-medium text-text flex items-center gap-1.5"><Ban className="h-4 w-4 text-red-500" /> {rule.action}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface/20 p-4">
-          <p className="text-xs text-muted mb-1">Priority</p>
-          <p className="text-sm font-medium text-text">#{rule.priority}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface/20 p-4">
-          <p className="text-xs text-muted mb-1">Matched Today</p>
-          <p className="text-sm font-medium text-text">0</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface/20 p-4">
-          <p className="text-xs text-muted mb-1">Created</p>
-          <p className="text-sm font-medium text-text">{new Date(rule.createdAt).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -68,7 +32,7 @@ export default async function FirewallRuleDetailPage(props: { params: Promise<{ 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1">Rule Name</label>
-              <input defaultValue={rule.name} className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
+              <input placeholder="e.g., Block SQL injection" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1">Action</label>
@@ -82,7 +46,7 @@ export default async function FirewallRuleDetailPage(props: { params: Promise<{ 
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1">Match Pattern</label>
-              <input defaultValue={rule.pattern} className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
+              <input placeholder="/api/* or User-Agent pattern" className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
               <p className="text-xs text-muted mt-1">Glob or regex pattern to match requests</p>
             </div>
             <div>
@@ -107,7 +71,7 @@ export default async function FirewallRuleDetailPage(props: { params: Promise<{ 
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1">Test Path</label>
-              <input placeholder="/api/users?id=1' OR '1'='1" className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
+              <input placeholder="/api/users" className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-transparent focus:outline-none focus:ring-2 focus:ring-accent/50" />
             </div>
             <button className="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-white/[0.05] transition-colors">Run Test</button>
           </div>

@@ -16,6 +16,9 @@ export default async function DeploymentsPage() {
   if (!session) redirect("/login");
 
   const deployments = await prisma.deployment.findMany({
+    where: {
+      project: { userId: session.user.id },
+    },
     include: { project: { select: { name: true, id: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
