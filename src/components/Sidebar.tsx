@@ -152,13 +152,14 @@ function SidebarNav({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function isActive(href: string) {
+  function isActive(href: string, exact = false) {
     if (href === "/dashboard") {
       return (
         pathname === "/dashboard" || pathname.startsWith("/dashboard/projects")
       );
     }
-    return pathname.startsWith(href);
+    if (exact) return pathname === href;
+    return pathname === href || pathname.startsWith(href + "/");
   }
 
   const projectMatch = pathname.match(/^\/dashboard\/projects\/([^/]+)/);
@@ -243,7 +244,7 @@ function SidebarNav({
                 } else if (activeProjectId && PROJECT_SCOPED.has(item.href)) {
                   href = `/dashboard/projects/${activeProjectId}${item.href.replace("/dashboard", "")}`;
                 }
-                const active = isActive(href) && !(isFirstChild && !activeProjectId && pathname.startsWith("/dashboard/projects"));
+                const active = isActive(href, isFirstChild && !!activeProjectId) && !(isFirstChild && !activeProjectId && pathname.startsWith("/dashboard/projects"));
                 return (
                   <Link
                     key={item.href}

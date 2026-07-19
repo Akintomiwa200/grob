@@ -1,16 +1,23 @@
-import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/login", process.env.NEXTAUTH_URL || "http://localhost:3000"));
+export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token?.id && !token?.sub) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set("grob-link-github", session.user.id, {
+  const userId = (token.id || token.sub) as string;
+
+  const res = NextResponse.redirect(
+    new URL(
+      `https://github.com/login/oauth/authorize?client_id=${process.env.AUTH_GITHUB_ID}&redirect_uri=${encodeURIComponent("http://localhost:3000/api/auth/callback/github")}&scope=${encodeURIComponent("read:user user:email repo")}&state=${encodeURIComponent(JSON.stringify({ flow: "link", ts: Date.now() }))}`,
+      req.url
+    )
+  );
+
+  res.cookies.set("grob-link-github", userId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -18,11 +25,5 @@ export async function GET() {
     path: "/",
   });
 
-  const clientId = process.env.AUTH_GITHUB_ID;
-  const redirectUri = encodeURIComponent("http://localhost:3000/api/auth/callback/github");
-  const state = encodeURIComponent(JSON.stringify({ flow: "link", ts: Date.now() }));
-
-  return NextResponse.redirect(
-    `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=read:user+user:email+repo&state=${state}`
-  );
+  return res;
 }
