@@ -7,7 +7,7 @@ import { generateUniqueSlug } from "@/lib/slug";
 
 export async function createProject(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Not authenticated");
+  if (!session?.user?.id) return { error: "Not authenticated" };
 
   const repoFullName = (formData.get("repoFullName") as string) || "";
   const defaultBranch = (formData.get("defaultBranch") as string) || "main";
@@ -20,7 +20,7 @@ export async function createProject(formData: FormData) {
     where: { userId: session.user.id, name: projectName },
   });
   if (existing) {
-    throw new Error(`A project named "${projectName}" already exists.`);
+    return { error: `A project named "${projectName}" already exists.` };
   }
 
   // Generate unique slug

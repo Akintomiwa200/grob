@@ -7,10 +7,6 @@ const LOCAL_PATHS = [
   "/api/deploy",
   "/api/webhooks",
   "/api/user",
-  "/login",
-  "/register",
-  "/dashboard",
-  "/_next",
   "/favicon",
 ];
 

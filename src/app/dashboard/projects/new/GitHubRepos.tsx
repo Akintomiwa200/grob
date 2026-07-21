@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton, SkeletonLine } from "@/components/Skeleton";
 
 type GitHubRepo = {
   id: number;
@@ -49,10 +50,24 @@ export function GitHubRepos({
 
   if (loading) {
     return (
-      <div className="p-4 border border-border rounded-xl text-sm text-muted bg-surface/30">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          Loading repositories...
+      <div className="border border-border rounded-xl bg-bg overflow-hidden animate-pulse">
+        <div className="p-3 border-b border-border bg-surface/30 rounded-t-xl flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded shrink-0" />
+          <Skeleton className="h-8 flex-1 rounded-lg" />
+        </div>
+        <div className="max-h-[400px]">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between px-4 py-4 border-b border-border last:border-b-0">
+              <div className="flex-1 space-y-2 pr-4">
+                <SkeletonLine className="h-4 w-36" />
+                <div className="flex items-center gap-3">
+                  <SkeletonLine className="h-3 w-16" />
+                  <SkeletonLine className="h-3 w-14" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-16 rounded-md shrink-0" />
+            </div>
+          ))}
         </div>
       </div>
     );

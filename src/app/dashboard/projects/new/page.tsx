@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createProject } from "./actions";
 import { GitHubRepos } from "./GitHubRepos";
+import { toast } from "sonner";
 
 type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 
@@ -225,7 +227,15 @@ export default function NewProjectPage() {
             </div>
           )}
           <h2 className="text-xl font-semibold mb-4">Configure Project</h2>
-          <form action={createProject} className="space-y-5">
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const formData = new FormData(form);
+            const result = await createProject(formData);
+            if (result && "error" in result) {
+              toast.error(result.error);
+            }
+          }} className="space-y-5">
             <input type="hidden" name="repoFullName" value={selectedRepo?.fullName || ""} />
             <input type="hidden" name="defaultBranch" value={selectedRepo?.defaultBranch || "main"} />
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Sidebar, { SidebarToggle } from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
+import { Toaster } from "sonner";
 import type { Session } from "next-auth";
 
 type Project = { id: string; name: string };
@@ -23,6 +24,7 @@ export default function DashboardClient({
 
   return (
     <div className="flex h-screen bg-bg overflow-hidden">
+      <Toaster position="top-right" theme="dark" richColors />
       <Sidebar
         user={{
           name: session.user?.name,

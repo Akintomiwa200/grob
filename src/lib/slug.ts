@@ -15,7 +15,7 @@ export function generateUniqueSlug(base: string, existing: string[]): string {
   let candidate = slug;
   let counter = 1;
   while (existing.includes(candidate)) {
-    candidate = `${slug}-${counter}`;
+    candidate = `${slug}${counter}`;
     counter++;
   }
   return candidate;

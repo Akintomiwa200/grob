@@ -365,7 +365,7 @@ export default function Sidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 flex-col bg-bg text-text shrink-0">
+      <aside className="hidden md:flex w-64 flex-col bg-bg text-text shrink-0 border-r border-border">
         <SidebarNav user={user} pathname={pathname} />
       </aside>
 
