@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   X,
   Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 type ProfileData = {
@@ -40,6 +42,9 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [passwordError, setPasswordError] = useState("");
 
@@ -203,7 +208,7 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full rounded-lg border border-border bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -213,13 +218,13 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
                       placeholder="username"
-                      className="w-full rounded-lg border border-border bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted">Email Address</label>
-                  <div className="flex w-full items-center justify-between rounded-lg border border-border bg-[#0B0E14] px-3 py-2">
+                  <div className="flex w-full items-center justify-between rounded-lg border border-border bg-bg px-3 py-2">
                     <div className="flex items-center gap-2 text-sm text-text">
                       <Mail className="h-4 w-4 text-muted" />
                       {profile.email || "No email provided"}
@@ -363,31 +368,46 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted">Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPw ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-2 pr-10 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors">
+                      {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted">New Password</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPw ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-2 pr-10 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors">
+                      {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
-                    className="w-full rounded-lg border border-border bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPw ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-2 pr-10 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors">
+                      {showConfirmPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {passwordError && (
@@ -445,7 +465,7 @@ export default function ProfileClient({ profile }: { profile: ProfileData }) {
                   value={deleteEmail}
                   onChange={(e) => setDeleteEmail(e.target.value)}
                   placeholder={profile.email || ""}
-                  className="w-full rounded-lg border border-red-500/20 bg-[#0B0E14] px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                  className="w-full rounded-lg border border-red-500/20 bg-bg px-3 py-2 text-sm text-text placeholder-muted/50 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
 

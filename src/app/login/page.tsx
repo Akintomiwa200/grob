@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [checked, setChecked] = useState(false);
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -127,14 +128,23 @@ export default function LoginPage() {
               <label className="text-xs font-medium text-muted ml-1">
                 {mode === "register" ? "Create a Password" : "Enter Password"}
               </label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" 
-                required
-                className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm"
-              />
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••" 
+                  required
+                  className="w-full rounded-xl border border-border bg-bg px-4 py-3 pr-10 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             
             {error && <p className="text-xs text-red-500">{error}</p>}
@@ -181,7 +191,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com" 
                 required
-                className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm"
+                className="w-full rounded-xl border border-border bg-bg px-4 py-3 text-sm text-text placeholder-muted/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm"
               />
             </div>
             

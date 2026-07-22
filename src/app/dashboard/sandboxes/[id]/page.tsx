@@ -91,7 +91,7 @@ export default async function SandboxDetailPage(props: { params: Promise<{ id: s
             </h2>
             <button className="text-xs text-muted hover:text-text transition-colors">Copy</button>
           </div>
-          <div className="sidebar-scroll p-4 bg-[#0B0E14] font-mono text-xs text-emerald-400 max-h-64 overflow-y-auto">
+          <div className="sidebar-scroll p-4 bg-bg font-mono text-xs text-emerald-400 max-h-64 overflow-y-auto">
             {logs.map((log, i) => (
               <div key={i} className="py-0.5">{log}</div>
             ))}

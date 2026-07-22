@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
 import {
   ChevronRight,
   ChevronsUpDown,
@@ -461,11 +462,9 @@ export default function Navbar({
 
               <button
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   setUserMenuOpen(false);
-                  await fetch("/api/auth/signout", { method: "POST" });
-                  router.push("/login");
-                  router.refresh();
+                  signOut({ callbackUrl: "/login" });
                 }}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[#FF5FA2] hover:bg-[#FF5FA2]/10 transition-colors"
               >

@@ -169,7 +169,7 @@ export function LogViewer({
                           ({dep.logs ? dep.logs.split("\n").length : 0} lines)
                         </span>
                       </div>
-                      <pre className="bg-[#0B0E14] rounded-xl p-4 overflow-x-auto max-h-[400px] overflow-y-auto">
+                      <pre className="bg-bg rounded-xl p-4 overflow-x-auto max-h-[400px] overflow-y-auto">
                         <code className="text-xs font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap break-all">
                           {dep.logs || "No logs available for this deployment."}
                         </code>

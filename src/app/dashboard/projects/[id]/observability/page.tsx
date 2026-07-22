@@ -221,7 +221,7 @@ export default async function ObservabilityPage(props: {
               {mostRecentFailure.commitMsg || "Manual Deployment"}
             </p>
           </div>
-          <pre className="bg-[#0B0E14] rounded-lg p-4 overflow-x-auto max-h-[200px] overflow-y-auto">
+          <pre className="bg-bg rounded-lg p-4 overflow-x-auto max-h-[200px] overflow-y-auto">
             <code className="text-xs font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap break-all">
               {extractErrorLines(mostRecentFailure.logs).join("\n")}
             </code>
@@ -283,7 +283,7 @@ export default async function ObservabilityPage(props: {
                       {dep.branch || "main"}
                     </span>
                   </div>
-                  <pre className="bg-[#0B0E14] rounded-lg p-3 overflow-x-auto max-h-[120px] overflow-y-auto">
+                  <pre className="bg-bg rounded-lg p-3 overflow-x-auto max-h-[120px] overflow-y-auto">
                     <code className="text-[11px] font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
                       {errorLines.slice(0, 5).join("\n")}
                     </code>

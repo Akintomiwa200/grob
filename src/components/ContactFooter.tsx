@@ -81,7 +81,7 @@ export function ContactFooter() {
                   placeholder="John Doe" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+                  className="w-full rounded-xl border border-border bg-bg px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
               <div className="space-y-2">
@@ -91,7 +91,7 @@ export function ContactFooter() {
                   placeholder="your@email.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+                  className="w-full rounded-xl border border-border bg-bg px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export function ContactFooter() {
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
+                className="w-full rounded-xl border border-border bg-bg px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
               />
             </div>
 

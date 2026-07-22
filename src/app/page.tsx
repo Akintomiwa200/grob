@@ -33,6 +33,8 @@ import {
 import { GitBranch, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
 
 import { Pipeline } from "@/components/Pipeline";
+import { FrameworkShowcase } from "@/components/FrameworkShowcase";
+import { DeploymentSection } from "@/components/DeploymentSection";
 import { PowerfulFeatures } from "@/components/PowerfulFeatures";
 import { FAQ } from "@/components/FAQ";
 import { ContactFooter } from "@/components/ContactFooter";
@@ -377,6 +379,12 @@ export default function HomePage() {
             </div>
           </div>
         </motion.section>
+
+        {/* Framework Showcase */}
+        <FrameworkShowcase />
+
+        {/* Deployment Section */}
+        <DeploymentSection />
 
         {/* Pipeline */}
         <Pipeline />

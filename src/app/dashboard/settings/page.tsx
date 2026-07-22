@@ -67,7 +67,7 @@ export default async function SettingsPage() {
                     <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-bg">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-2.5 w-2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0B0E14] border border-border shadow-[0_0_15px_rgba(110,91,255,0.2)]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg border border-border shadow-[0_0_15px_rgba(110,91,255,0.2)]">
                       <Moon className="h-5 w-5 text-accent" />
                     </div>
                     <span className="text-sm font-medium text-text">Dark</span>
