@@ -1,6 +1,39 @@
-import { motion } from "framer-motion";
+"use client";
+
+import { useState } from "react";
+import { toast } from "sonner";
 
 export function ContactFooter() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      if (!res.ok) throw new Error("Failed to send");
+      toast.success("Message sent! We'll get back to you soon.");
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="relative overflow-hidden bg-bg text-text pt-32 pb-12 font-[Inter,sans-serif]">
       {/* Background Map / Dots */}
@@ -36,16 +69,18 @@ export function ContactFooter() {
         {/* Contact Form Card */}
         <div className="w-full max-w-xl rounded-2xl border border-border bg-surface/50 backdrop-blur-xl p-8 shadow-2xl mb-24">
           <h3 className="font-[Space_Grotesk,sans-serif] text-xl font-bold mb-8">
-            Global User Community
+            Send us a message
           </h3>
 
-          <form className="space-y-6 flex flex-col" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6 flex flex-col" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-semibold tracking-wider text-muted uppercase">Full Name</label>
                 <input 
                   type="text" 
                   placeholder="John Doe" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
@@ -54,6 +89,8 @@ export function ContactFooter() {
                 <input 
                   type="email" 
                   placeholder="your@email.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
@@ -64,12 +101,18 @@ export function ContactFooter() {
               <textarea 
                 placeholder="How can we help you?" 
                 rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 className="w-full rounded-xl border border-border bg-[#0B0E14] px-4 py-3 text-sm text-text placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
               />
             </div>
 
-            <button type="submit" className="w-full rounded-full bg-text text-bg font-semibold py-3 text-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
-              Continue
+            <button 
+              type="submit" 
+              disabled={submitting}
+              className="w-full rounded-full bg-text text-bg font-semibold py-3 text-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Sending..." : "Continue"}
             </button>
           </form>
         </div>
